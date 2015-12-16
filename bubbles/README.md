@@ -4,7 +4,10 @@ The bubbles report shows parent-child related Fact Sheets from leanIX in form of
 
 The report is parameterized via url query parameters:
 
-* baseUrl: The base url to the instance (e.g. app.leanix.net)
-* ws: The workspace name (e.g. demo)
-* apiKey: The apiKey to access the leanIX API
-* (optional) fsType: The type of Fact Sheet to be shown (e.g. businessCapabilities)
+* baseUrl: Base url to the instance properly encoded to be used as query parameter (e.g. https%3A%2F%2Fapp.leanix.net)
+* ws: workspace name (e.g. demo)
+* apiKey: apiKey to access the leanIX API
+* (optional) fsType: The type of Fact Sheet as used in the REST API to be shown (e.g. businessCapabilities)
+
+### Example:
+https://leanix.github.io/leanix-custom-reports/master/bubbles/index.html?baseUrl=https%3A%2F%2Ftest-app.leanix.net&ws=demo&apiKey=yourApiKey&fsType=businessCapabilities
