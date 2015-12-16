@@ -6,6 +6,8 @@ var del = require('del');
 var browserSync = require('browser-sync');
 var reload = browserSync.reload;
 
+gulp.task('default', ['dist'], function() {});
+
 gulp.task('clean', function() {
   return del(['dist']);
 });
