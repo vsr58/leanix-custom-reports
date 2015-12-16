@@ -1,0 +1,33 @@
+{
+  "name": "leanix-custom-reports",
+  "version": "0.0.1",
+  "description": "Contains a set of custom reports for leanIX",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/leanix/leanix-custom-reports.git"
+  },
+  "keywords": [
+    "leanix",
+    "custom",
+    "reports",
+    "visualisation"
+  ],
+  "author": "leanIX GmbH",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/leanix/leanix-custom-reports/issues"
+  },
+  "homepage": "https://github.com/leanix/leanix-custom-reports#readme",
+  "devDependencies": {
+    "broccoli": "0.16.9",
+    "broccoli-concat": "2.0.3",
+    "broccoli-funnel": "1.0.1",
+    "broccoli-merge-trees": "1.1.0",
+    "broccoli-static-compiler": "0.2.2",
+    "broccoli-uglify-js": "0.1.3"
+  }
+}
