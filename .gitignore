@@ -1,0 +1,5 @@
+**/node_modules
+
+# ignore all dist files except the main in the root folder
+**/dist
+!/dist
