@@ -10,7 +10,7 @@ var bubblesDist = 'bubbles/dist';
 var destDir = 'bubbles';
 
 var bubblesJs = concatenate(bubblesDist, {
-    inputFiles : ['all.js', '*.js'],
+    inputFiles : ['*.js'],
     outputFile : destDir + '/index.js'
 });
 

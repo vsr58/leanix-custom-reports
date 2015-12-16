@@ -27,4 +27,6 @@ mv -f dist $branch
 git rm -rf --ignore-unmatch dist
 git add $branch
 git describe --always | git commit -m -
+
+pause
 git checkout $branch

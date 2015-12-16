@@ -1,6 +1,7 @@
 var gulp = require('gulp');
 var serve = require('gulp-serve');
 var concat = require('gulp-concat');
+var del = require('del');
 
 var browserSync = require('browser-sync');
 var reload = browserSync.reload;
@@ -9,8 +10,8 @@ gulp.task('clean', function() {
   return del(['dist']);
 });
 
-gulp.task('copy', function() {
-  return gulp.src(['./src/index.html', './src/index.js'])
+gulp.task('copy', ['clean'], function() {
+  return gulp.src(['./src/index.html'])
     .pipe(gulp.dest('./dist/'));
 });
 
@@ -18,9 +19,10 @@ gulp.task('dist', ['copy'], function() {
   return gulp.src([
       './node_modules/jquery/dist/jquery.js',
       './node_modules/lodash/index.js',
-      './node_modules/d3/d3.js'
+      './node_modules/d3/d3.js',
+      './src/index.js'
     ])
-    .pipe(concat('all.js'))
+    .pipe(concat('index.js'))
     .pipe(gulp.dest('./dist/'));
 });
 
