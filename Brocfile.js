@@ -15,7 +15,7 @@ var bubblesJs = concatenate(bubblesDist, {
 });
 
 bubblesJs = uglifyJs(bubblesJs, { compress: true });
-var staticFiles = new Funnel(bubblesDist, { files: ['index.html'], destDir: destDir });
+var staticFiles = new Funnel(bubblesDist, { files: ['index.html', 'index.css'], destDir: destDir });
 
 files.push(staticFiles, bubblesJs);
 

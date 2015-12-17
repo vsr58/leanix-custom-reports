@@ -11,7 +11,8 @@
   "dependencies": {
     "d3": "3.5.11",
     "jquery": "2.1.4",
-    "lodash": "3.10.1"
+    "lodash": "3.10.1",
+    "toastr": "2.1.2"
   },
   "devDependencies": {
     "browser-sync": "2.10.1",

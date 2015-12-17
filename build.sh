@@ -8,4 +8,8 @@ function build_report {
   cd ..
 }
 
+# List of custom reports to be built
 build_report bubbles
+
+
+rm -rf dist && broccoli build 'dist'

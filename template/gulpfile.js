@@ -17,7 +17,16 @@ gulp.task('copy', ['clean'], function() {
     .pipe(gulp.dest('./dist/'));
 });
 
-gulp.task('dist', ['copy'], function() {
+gulp.task('dist_css', ['copy'], function() {
+  return gulp.src([
+      './node_modules/toastr/build/toastr.min.css',
+      './src/index.css'
+    ])
+    .pipe(concat('index.css'))
+    .pipe(gulp.dest('./dist/'));
+});
+
+gulp.task('dist', ['copy', 'dist_css'], function() {
   return gulp.src([
       './node_modules/jquery/dist/jquery.js',
       './node_modules/lodash/index.js',
@@ -36,7 +45,7 @@ gulp.task('watch', ['dist'], function() {
         // Run as an https by uncommenting 'https: true'
         // Note: this uses an unsigned certificate which on first access
         //       will present a certificate warning in the browser.
-        // https: true,
+        https: true,
         server: ['dist']
     });
 

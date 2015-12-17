@@ -1,3 +1,6 @@
-'use strict';
+(function () {
+  'use strict';
 
-// Your JavaScript
+  // Your code
+
+})();

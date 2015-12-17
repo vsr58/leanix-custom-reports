@@ -6,8 +6,6 @@ if [ "gh-pages" == "$branch" ]; then
     exit
 fi
 
-rm -rf dist && broccoli build 'dist'
-
 echo Updating gh-pages for branch $branch
 
 git checkout gh-pages
@@ -18,6 +16,4 @@ mv -f dist $branch
 git rm -rf --ignore-unmatch dist
 git add $branch
 git describe --always | git commit -m -
-
-pause
 git checkout $branch
