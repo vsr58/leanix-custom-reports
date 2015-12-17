@@ -22,9 +22,9 @@
     var apiKey = args.apiKey;
   }
 
-  var fsType = 'businessCapabilities';
-  if (args.fsType) {
-    fsType = args.fsType;
+  var type = 'businessCapabilities';
+  if (args.type) {
+    type = args.type;
   }
 
   $.ajaxSetup({
@@ -70,7 +70,7 @@
     });
 
   var treeDataPromise = configPromise.then(function (typeMap) {
-    var factSheetType = typeMap[fsType].ID;
+    var factSheetType = typeMap[type].ID;
     var url = apiBaseUrl + '/factsheets?relations=true&type=' + factSheetType + '&pageSize=-1';
 
     return $.get(url)
@@ -93,9 +93,9 @@
 
   $.when(configPromise, treeDataPromise)
   .then(function (objectTypes, treeData) {
-    var typeConfig = objectTypes[fsType];
+    var typeConfig = objectTypes[type];
     $('#headline').text(typeConfig.name);
-    display({ name: fsType, children: treeData }, typeConfig);
+    display({ name: type, children: treeData }, typeConfig);
   });
 
   function buildTree (map, id) {
