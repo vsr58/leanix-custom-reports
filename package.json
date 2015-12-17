@@ -23,11 +23,5 @@
   },
   "homepage": "https://github.com/leanix/leanix-custom-reports#readme",
   "devDependencies": {
-    "broccoli": "0.16.9",
-    "broccoli-concat": "2.0.3",
-    "broccoli-funnel": "1.0.1",
-    "broccoli-merge-trees": "1.1.0",
-    "broccoli-static-compiler": "0.2.2",
-    "broccoli-uglify-js": "0.1.3"
   }
 }
