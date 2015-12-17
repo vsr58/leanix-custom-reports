@@ -10,8 +10,8 @@ echo Updating gh-pages for branch $branch
 
 git checkout gh-pages
 git checkout $branch -- dist
-mkdir -p $branch
 git rm --ignore-unmatch -rf $branch
+rm -rf $branch
 mv -f dist $branch
 git rm -rf --ignore-unmatch dist
 git add $branch
