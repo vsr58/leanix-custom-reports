@@ -10,4 +10,4 @@ The report is parameterized via url query parameters:
 * (optional) fsType: The type of Fact Sheet as used in the REST API to be shown (e.g. businessCapabilities)
 
 ### Example:
-https://leanix.github.io/leanix-custom-reports/master/bubbles/index.html?baseUrl=https%3A%2F%2Ftest-app.leanix.net&ws=demo&apiKey=yourApiKey&fsType=businessCapabilities
+https://leanix.github.io/leanix-custom-reports/master/bubbles/index.html?baseUrl=https%3A%2F%2Ftest-app.leanix.net&ws=demo&apiKey=yourApiKey&type=businessCapabilities
