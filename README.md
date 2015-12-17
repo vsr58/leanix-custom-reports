@@ -6,7 +6,6 @@ Each custom report is located in its own subdirectory. It is expected that the s
 
 ### Adding a new custom report
 * Create a new directory named after the custom report by copying the ```template``` directory
-* Add a new set of commands to ```Brocfile.js``` to gather the files from your custom reports dist directory into the main dist directory
 * Add a new line to ```build.sh``` for your subdirectory 
 
 ### Publishing for github pages
