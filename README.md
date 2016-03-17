@@ -1,5 +1,8 @@
 # leanix-custom-reports
 Contains custom reports (e.g. based on d3js) which can be included into leanIX reporting.
+These reports are hosted via github-pages and are available at: http://leanix.github.io/leanix-custom-reports/
+
+* Example for bubbles: http://leanix.github.io/leanix-custom-reports/master/bubbles/index.html
 
 ### Requirements for each report
 Each custom report is located in its own subdirectory. It is expected that the subdirectory can be built via the ```gulp``` command, which puts all relevant files into a ```dist``` directory.
