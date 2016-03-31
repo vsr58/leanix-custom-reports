@@ -49747,14 +49747,15 @@ var ReportCapabilitySpend = (function() {
                     sortOrder : 'desc'
                 };
 
+                var options = $.extend({}, BootstrapTable.defaultProps.options, options);
+
                 ReactDOM.render(
                     React.createElement("div", null, 
-                        React.createElement("h3", null, that.title ? that.title : 'Report spend by Business Capability'), 
                         React.createElement(BootstrapTable, {data: output, striped: true, hover: true, search: true, exportCSV: true, options: options}, 
                             React.createElement(TableHeaderColumn, {dataField: "name", isKey: true, dataAlign: "left", dataSort: true, dataFormat: link}, "Business Capability"), 
-                            React.createElement(TableHeaderColumn, {dataField: "count", width: "200", dataSort: true}, "Number of supported apps"), 
-                            React.createElement(TableHeaderColumn, {dataField: "avgCost", width: "200", dataSort: true, dataFormat: moneyFormatter}, "Avg total cost per app"), 
-                            React.createElement(TableHeaderColumn, {dataField: "cost", width: "200", dataSort: true, dataFormat: moneyFormatter}, "Total cost of all supporting apps")
+                            React.createElement(TableHeaderColumn, {dataField: "count", width: "200", dataSort: true}, "# of apps"), 
+                            React.createElement(TableHeaderColumn, {dataField: "avgCost", width: "200", dataSort: true, dataFormat: moneyFormatter}, "Avg cost per app"), 
+                            React.createElement(TableHeaderColumn, {dataField: "cost", width: "200", dataSort: true, dataFormat: moneyFormatter}, "Total cost all apps")
                         )
                     ),
                     document.getElementById("app")
@@ -49826,7 +49827,7 @@ var ReportProcessSpend = (function() {
                 var output = [];
                 for (var i = 0; i < list.length; i++) {
                     output.push({
-                        name : list[i].displayName,
+                        name : list[i].fullName,
                         id : list[i].ID,
                         cost : list[i].stats.serviceCost,
                         count : list[i].stats.services.length,
@@ -49847,14 +49848,15 @@ var ReportProcessSpend = (function() {
                     sortOrder : 'desc'
                 };
 
+                var options = $.extend({}, BootstrapTable.defaultProps.options, options);
+
                 ReactDOM.render(
                     React.createElement("div", null, 
-                        React.createElement("h3", null, "Application Spend by Process"), 
                         React.createElement(BootstrapTable, {data: output, striped: true, hover: true, search: true, exportCSV: true, options: options}, 
                             React.createElement(TableHeaderColumn, {dataField: "name", isKey: true, dataAlign: "left", dataSort: true, dataFormat: link}, "Process"), 
-                            React.createElement(TableHeaderColumn, {dataField: "count", dataSort: true}, "Number of supported apps"), 
-                            React.createElement(TableHeaderColumn, {dataField: "avgCost", dataSort: true, dataFormat: moneyFormatter}, "Avg total cost per app"), 
-                            React.createElement(TableHeaderColumn, {dataField: "cost", dataSort: true, dataFormat: moneyFormatter}, "Total cost of all supporting apps")
+                            React.createElement(TableHeaderColumn, {dataField: "count", dataSort: true}, "# of apps"), 
+                            React.createElement(TableHeaderColumn, {dataField: "avgCost", dataSort: true, dataFormat: moneyFormatter}, "Avg cost per app"), 
+                            React.createElement(TableHeaderColumn, {dataField: "cost", dataSort: true, dataFormat: moneyFormatter}, "Total cost all apps")
                         )
                     ),
                     document.getElementById("app")
@@ -49949,7 +49951,6 @@ var ReportHierarchy = (function() {
 
                 ReactDOM.render(
                     React.createElement("div", {className: "report-hierarchy"}, 
-                        React.createElement("h3", null, that.title ? that.title : 'Domain Definitions'), 
                         React.createElement(BootstrapTable, {data: output, striped: false, hover: false, search: true, exportCSV: true, trClassName: trClassFormat}, 
                             React.createElement(TableHeaderColumn, {dataField: "id", isKey: true, hidden: true}, "ID"), 
                             React.createElement(TableHeaderColumn, {dataField: "level", width: "150", dataAlign: "left", dataSort: false, filter: {type: "NumberFilter", options: levels, numberComparators: ['<='], defaultValue: {comparator: '<='}}}, "Level"), 
@@ -50130,7 +50131,6 @@ var ReportApplicationLifecycle = (function() {
 
                 ReactDOM.render(
                     React.createElement("div", null, 
-                        React.createElement("h3", null, that.title ? that.title : 'Application Lifecycle and Project'), 
                         React.createElement(BootstrapTable, {data: output, striped: true, hover: true, search: true, exportCSV: true}, 
                             React.createElement(TableHeaderColumn, {dataField: "id", isKey: true, hidden: true}, "ID"), 
                             React.createElement(TableHeaderColumn, {dataField: "market", width: "80", dataAlign: "left", dataSort: true, filter: {type: "SelectFilter", options: markets}}, "Market"), 
