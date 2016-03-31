@@ -24,6 +24,10 @@ var FactSheetIndex = (function() {
             list.push(this.index[type][key]);
         }
 
+        list.sort(function(a, b) {
+            return a.displayName.localeCompare(b.displayName);
+        });
+
         return list;
     };
 

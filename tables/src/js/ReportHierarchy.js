@@ -29,6 +29,9 @@ var ReportHierarchy = (function() {
 
                 var output = [];
                 for (var i = 0; i < list.length; i++) {
+                    if (list[i].level >= that.maxLevel)
+                        continue;
+
                     if (!that.tagFilter || list[i].tags.indexOf(that.tagFilter) != -1)  {
 
                         var hierarchy = {};

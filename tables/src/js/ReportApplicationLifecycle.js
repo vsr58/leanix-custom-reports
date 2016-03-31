@@ -28,6 +28,11 @@ var ReportApplicationLifecycle = (function() {
                     5: "End of Life"
                 };
 
+                var lifecycleArray = [];
+                for (var key in lifecycles) {
+                    lifecycleArray.push(lifecycles[key]);
+                }
+
                 function formattedDate(date) {
                     var d = new Date(date || Date.now()),
                         month = '' + (d.getMonth() + 1),
@@ -166,9 +171,9 @@ var ReportApplicationLifecycle = (function() {
                             <TableHeaderColumn dataField="id" isKey={true} hidden={true}>ID</TableHeaderColumn>
                             <TableHeaderColumn dataField="market" width="80" dataAlign="left" dataSort={true} filter={{type: "SelectFilter", options: markets}}>Market</TableHeaderColumn>
                             <TableHeaderColumn dataField="name" dataAlign="left" dataSort={true} dataFormat={link} filter={{type: "TextFilter", placeholder: "Please enter a value"}}>Application Name</TableHeaderColumn>
-                            <TableHeaderColumn dataField="costCentre" width="100" dataAlign="left" dataSort={true} filter={{type: "SelectFilter", options: getLookup(costCentres)}}>Cost Centre</TableHeaderColumn>
-                            <TableHeaderColumn dataField="appType" dataAlign="left" dataSort={true} filter={{type: "SelectFilter", options: getLookup(appTypes)}}>Application Type</TableHeaderColumn>
-                            <TableHeaderColumn dataField="lifecyclePhase" width="100" dataAlign="left" dataSort={true} filter={{type: "TextFilter", placeholder: "Please enter a value"}}>Phase</TableHeaderColumn>
+                            <TableHeaderColumn dataField="costCentre" width="120" dataAlign="left" dataSort={true} filter={{type: "SelectFilter", options: getLookup(costCentres)}}>Cost Centre</TableHeaderColumn>
+                            <TableHeaderColumn dataField="appType" width="100" dataAlign="left" dataSort={true} filter={{type: "SelectFilter", options: getLookup(appTypes)}}>App Type</TableHeaderColumn>
+                            <TableHeaderColumn dataField="lifecyclePhase" width="100" dataAlign="left" dataSort={true} filter={{type: "SelectFilter", options: getLookup(lifecycleArray)}}>Phase</TableHeaderColumn>
                             <TableHeaderColumn dataField="lifecycleStart" width="100" dataAlign="left" dataSort={true} filter={{type: "TextFilter", placeholder: "Please enter a value"}}>Phase Start</TableHeaderColumn>
                             <TableHeaderColumn dataField="projectName" dataAlign="left" dataSort={true} dataFormat={linkProject} filter={{type: "TextFilter", placeholder: "Please enter a value"}}>Project Name</TableHeaderColumn>
                             <TableHeaderColumn dataField="projectEffect" width="100" dataAlign="left" dataSort={true} filter={{type: "SelectFilter", options: projectEffects}}>Project Effect</TableHeaderColumn>

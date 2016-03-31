@@ -16,13 +16,19 @@
             var report = new ReportHierarchy(reportSetup);
             break;
         case 'capability-definitions-cobra':
-            var report = new ReportHierarchy(reportSetup, 'COBRA', 'Domain Definitions COBRA');
+            var report = new ReportHierarchy(reportSetup, 'COBRA');
+            break;
+        case 'capability-definitions-bca':
+            var report = new ReportHierarchy(reportSetup, 'BCA');
             break;
         case 'capability-spend-cobra':
-            var report = new ReportCapabilitySpend(reportSetup, 'COBRA', 'Report spend by COBRA');
+            var report = new ReportCapabilitySpend(reportSetup, 'COBRA');
             break;
         case 'capability-spend-bca':
-            var report = new ReportCapabilitySpend(reportSetup, 'BCA', 'Report spend by BCA');
+            var report = new ReportCapabilitySpend(reportSetup, 'BCA');
+            break;
+        case 'data-quality':
+            var report = new ReportDataQuality(reportSetup);
             break;
         case 'capability-spend':
         default:

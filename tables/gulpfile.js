@@ -48,6 +48,7 @@ gulp.task('dist', ['copy', 'dist_css', 'dist_fonts'], function() {
       './src/js/ReportCapabilitySpend.js',
       './src/js/ReportProcessSpend.js',
       './src/js/ReportHierarchy.js',
+      './src/js/ReportDataQuality.js',
       './src/js/ReportApplicationLifecycle.js',
       './src/js/App.js'
     ])
