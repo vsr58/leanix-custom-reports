@@ -16,3 +16,4 @@ npm install
 # List of custom reports to be built
 build_report bubbles
 build_report circle
+build_report tables
