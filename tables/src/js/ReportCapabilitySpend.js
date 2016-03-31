@@ -85,14 +85,15 @@ var ReportCapabilitySpend = (function() {
                     sortOrder : 'desc'
                 };
 
+                var options = $.extend({}, BootstrapTable.defaultProps.options, options);
+
                 ReactDOM.render(
                     <div>
-                        <h3>{that.title ? that.title : 'Report spend by Business Capability'}</h3>
                         <BootstrapTable data={output} striped={true} hover={true} search={true} exportCSV={true} options={options}>
                             <TableHeaderColumn dataField="name" isKey={true} dataAlign="left" dataSort={true} dataFormat={link}>Business Capability</TableHeaderColumn>
-                            <TableHeaderColumn dataField="count" width="200" dataSort={true}>Number of supported apps</TableHeaderColumn>
-                            <TableHeaderColumn dataField="avgCost" width="200" dataSort={true} dataFormat={moneyFormatter}>Avg total cost per app</TableHeaderColumn>
-                            <TableHeaderColumn dataField="cost" width="200" dataSort={true} dataFormat={moneyFormatter}>Total cost of all supporting apps</TableHeaderColumn>
+                            <TableHeaderColumn dataField="count" width="200" dataSort={true}># of apps</TableHeaderColumn>
+                            <TableHeaderColumn dataField="avgCost" width="200" dataSort={true} dataFormat={moneyFormatter}>Avg cost per app</TableHeaderColumn>
+                            <TableHeaderColumn dataField="cost" width="200" dataSort={true} dataFormat={moneyFormatter}>Total cost all apps</TableHeaderColumn>
                         </BootstrapTable>
                     </div>,
                     document.getElementById("app")

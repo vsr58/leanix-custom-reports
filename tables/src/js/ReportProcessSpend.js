@@ -60,7 +60,7 @@ var ReportProcessSpend = (function() {
                 var output = [];
                 for (var i = 0; i < list.length; i++) {
                     output.push({
-                        name : list[i].displayName,
+                        name : list[i].fullName,
                         id : list[i].ID,
                         cost : list[i].stats.serviceCost,
                         count : list[i].stats.services.length,
@@ -81,14 +81,15 @@ var ReportProcessSpend = (function() {
                     sortOrder : 'desc'
                 };
 
+                var options = $.extend({}, BootstrapTable.defaultProps.options, options);
+
                 ReactDOM.render(
                     <div>
-                        <h3>Application Spend by Process</h3>
                         <BootstrapTable data={output} striped={true} hover={true} search={true} exportCSV={true} options={options}>
                             <TableHeaderColumn dataField="name" isKey={true} dataAlign="left" dataSort={true} dataFormat={link}>Process</TableHeaderColumn>
-                            <TableHeaderColumn dataField="count" dataSort={true}>Number of supported apps</TableHeaderColumn>
-                            <TableHeaderColumn dataField="avgCost" dataSort={true} dataFormat={moneyFormatter}>Avg total cost per app</TableHeaderColumn>
-                            <TableHeaderColumn dataField="cost" dataSort={true} dataFormat={moneyFormatter}>Total cost of all supporting apps</TableHeaderColumn>
+                            <TableHeaderColumn dataField="count" dataSort={true}># of apps</TableHeaderColumn>
+                            <TableHeaderColumn dataField="avgCost" dataSort={true} dataFormat={moneyFormatter}>Avg cost per app</TableHeaderColumn>
+                            <TableHeaderColumn dataField="cost" dataSort={true} dataFormat={moneyFormatter}>Total cost all apps</TableHeaderColumn>
                         </BootstrapTable>
                     </div>,
                     document.getElementById("app")

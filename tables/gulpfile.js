@@ -28,7 +28,14 @@ gulp.task('dist_css', ['copy'], function() {
     .pipe(gulp.dest('./dist/'));
 });
 
-gulp.task('dist', ['copy', 'dist_css'], function() {
+gulp.task('dist_fonts', ['copy'], function() {
+    return gulp.src([
+            './node_modules/bootstrap/dist/fonts/glyph*',
+        ])
+        .pipe(gulp.dest('./dist/fonts/'));
+});
+
+gulp.task('dist', ['copy', 'dist_css', 'dist_fonts'], function() {
   return gulp.src([
       './node_modules/jquery/dist/jquery.js',
       './node_modules/react/dist/react-with-addons.js',

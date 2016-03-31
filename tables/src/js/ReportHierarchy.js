@@ -83,7 +83,6 @@ var ReportHierarchy = (function() {
 
                 ReactDOM.render(
                     <div className="report-hierarchy">
-                        <h3>{that.title ? that.title : 'Domain Definitions'}</h3>
                         <BootstrapTable data={output} striped={false} hover={false} search={true} exportCSV={true} trClassName={trClassFormat}>
                             <TableHeaderColumn dataField="id" isKey={true} hidden={true}>ID</TableHeaderColumn>
                             <TableHeaderColumn dataField="level" width="150" dataAlign="left" dataSort={false} filter={{type: "NumberFilter", options: levels, numberComparators: ['<='], defaultValue: {comparator: '<='}}}>Level</TableHeaderColumn>
