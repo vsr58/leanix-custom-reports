@@ -9,6 +9,8 @@ fi
 echo Updating gh-pages for branch $branch
 
 git checkout gh-pages
+git fetch
+git merge origin/gh-pages
 git checkout $branch -- dist
 git rm --ignore-unmatch -rf $branch
 rm -rf $branch
