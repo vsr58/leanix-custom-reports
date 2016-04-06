@@ -4,7 +4,7 @@
   "description": "Contains a set of custom reports for leanIX",
   "main": "",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "tables": "cd tables && gulp watch"
   },
   "repository": {
     "type": "git",

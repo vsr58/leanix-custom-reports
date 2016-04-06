@@ -30,6 +30,9 @@
         case 'data-quality':
             var report = new ReportDataQuality(reportSetup);
             break;
+        case 'data-quality-services':
+            var report = new ReportDataQualityServices(reportSetup);
+            break;
         case 'capability-spend':
         default:
             var report = new ReportCapabilitySpend(reportSetup);
