@@ -74,7 +74,7 @@ var ReportDataQualityServices = (function() {
                         if (!(market in groupedByMarket))
                             groupedByMarket[market] = [];
 
-                        groupedByMarket[market].push(item);
+                     //   groupedByMarket[market].push(item);
                     }
                 }
 
