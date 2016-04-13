@@ -4,7 +4,9 @@
   "description": "Contains a set of custom reports for leanIX",
   "main": "",
   "scripts": {
-    "tables": "cd tables && gulp watch"
+    "tables": "cd tables && gulp watch",
+    "bubbles": "cd bubbles && gulp watch",
+    "circle": "cd circle && gulp watch"
   },
   "repository": {
     "type": "git",
