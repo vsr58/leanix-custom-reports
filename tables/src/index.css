@@ -1,0 +1,28 @@
+.report-hierarchy .react-bs-table table td {
+    overflow: auto;
+    text-overflow: default;
+    white-space: normal;
+}
+
+.report-hierarchy .tr-level-1 {
+    background-color: #e4e4e4;
+}
+
+.report-hierarchy .tr-level-2 {
+    background-color: #f1f1f1;
+}
+
+.report-data-quality .tr-type-market {
+    background-color: #e4e4e4;
+}
+
+.report-data-quality .percentage {
+    font-size: 11px;
+    text-align: center;
+    width: 50px;
+    padding: 1px;
+}
+
+.glyphicon-export:before {
+    content: '';
+}
