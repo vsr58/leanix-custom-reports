@@ -9,7 +9,6 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "d3": "3.5.11",
     "jquery": "2.1.4",
     "lodash": "3.10.1"
   },
