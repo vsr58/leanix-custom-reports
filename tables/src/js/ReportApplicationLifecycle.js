@@ -121,37 +121,50 @@ var ReportApplicationLifecycle = (function() {
                             if (tmp) {
                                 if (tmp.projectID && fsIndex.index.projects[tmp.projectID]) {
 
-                                    projects.push({
-                                        id: tmp.projectID,
-                                        name: fsIndex.index.projects[tmp.projectID].fullName,
-                                        effect: tmp.comment,
-                                        type: getTagFromGroup(fsIndex.index.projects[tmp.projectID], ['Transformation', 'Legacy'])
-                                    })
+                                    var projectType = getTagFromGroup(fsIndex.index.projects[tmp.projectID], ['Transformation', 'Legacy'])
+                                    
+                                    output.push({
+                                        name : list[i].fullName,
+                                        id : list[i].ID,
+                                        costCentre : getTagFromGroup(list[i], costCentres),
+                                        appType : getTagFromGroup(list[i], appTypes),
+                                        market : market,
+                                        projectId : tmp.projectID,
+                                        projectName : fsIndex.index.projects[tmp.projectID].fullName,
+                                        projectEffect : tmp.comment,
+                                        projectType : projectType,
+                                        lifecyclePhase : currentLifecycle ? currentLifecycle.phase : '',
+                                        lifecycleStart : currentLifecycle ? currentLifecycle.startDate : ''
+                                    });
+
+                                    if (tmp.comment)
+                                        projectEffects[tmp.comment] = tmp.comment;
+
+                                    if (projectType)
+                                        projectTypes[projectType] = projectType;
+
+
                                 }
                             }
                         }
 
-                        output.push({
-                            name : list[i].fullName,
-                            id : list[i].ID,
-                            costCentre : getTagFromGroup(list[i], costCentres),
-                            appType : getTagFromGroup(list[i], appTypes),
-                            market : market,
-                            projectId : projects.length ? projects[0].id : '',
-                            projectName : projects.length ? projects[0].name : '',
-                            projectEffect : projects.length ? projects[0].effect : '',
-                            projectType : projects.length ? projects[0].type : '',
-                            lifecyclePhase : currentLifecycle ? currentLifecycle.phase : '',
-                            lifecycleStart : currentLifecycle ? currentLifecycle.startDate : ''
-                        });
-
-                        if (projects.length) {
-                            if (projects[0].effect)
-                                projectEffects[projects[0].effect] = projects[0].effect;
-
-                            if (projects[0].type)
-                                projectTypes[projects[0].type] = projects[0].type;
+                        if (list[i].serviceHasProjects.length == 0) {
+                             output.push({
+                                name : list[i].fullName,
+                                id : list[i].ID,
+                                costCentre : getTagFromGroup(list[i], costCentres),
+                                appType : getTagFromGroup(list[i], appTypes),
+                                market : market,
+                                projectId : '',
+                                projectName : '',
+                                projectEffect : '',
+                                projectType : '',
+                                lifecyclePhase : currentLifecycle ? currentLifecycle.phase : '',
+                                lifecycleStart : currentLifecycle ? currentLifecycle.startDate : ''
+                            });
                         }
+
+ 
                     }
                 }
 

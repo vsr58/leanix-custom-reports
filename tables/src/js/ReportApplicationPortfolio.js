@@ -8,7 +8,11 @@ var ReportApplicationPortfolio = (function() {
     ReportApplicationPortfolio.prototype.render = function() {
         var that = this;
 
-        var factSheetPromise = $.get(this.reportSetup.apiBaseUrl + '/factsheets?relations=true&types[]=10&types[]=16&types[]=18&pageSize=-1')
+        var factSheetPromise = $.get(this.reportSetup.apiBaseUrl + 
+        '/factsheets?relations=true&types[]=10&types[]=18&types[]=19' +
+        '&filterRelations[]=serviceHasBusinessCapabilities' + 
+        '&filterRelations[]=factSheetHasLifecycles&' + 
+        '&filterRelations[]=serviceHasResources&pageSize=-1')
             .then(function (response) {
                 return response.data;
             });
@@ -114,18 +118,16 @@ var ReportApplicationPortfolio = (function() {
                                 markets[market] = market;
                         }
 
-                        var projects = [];
+                        var resources = [];
                         // Projects
-                        for (var z = 0; z < list[i].serviceHasProjects.length; z++) {
-                            var tmp = list[i].serviceHasProjects[z];
+                        for (var z = 0; z < list[i].serviceHasResources.length; z++) {
+                            var tmp = list[i].serviceHasResources[z];
                             if (tmp) {
-                                if (tmp.projectID && fsIndex.index.projects[tmp.projectID]) {
+                                if (tmp.resourceID && fsIndex.index.resources[tmp.resourceID]) {
 
-                                    projects.push({
-                                        id: tmp.projectID,
-                                        name: fsIndex.index.projects[tmp.projectID].fullName,
-                                        effect: tmp.comment,
-                                        type: getTagFromGroup(fsIndex.index.projects[tmp.projectID], ['Transformation', 'Legacy'])
+                                    resources.push({
+                                        id: tmp.resourceID,
+                                        name: fsIndex.index.resources[tmp.resourceID].fullName,
                                     })
                                 }
                             }
@@ -154,25 +156,23 @@ var ReportApplicationPortfolio = (function() {
                             cobraId : cobras.length ? cobras[0].id : '',
                             cobraName : cobras.length ? cobras[0].name : '',
                             id : list[i].ID,
-                            
                             costCentre : getTagFromGroup(list[i], costCentres),
-                            appType : getTagFromGroup(list[i], appTypes),
                             market : market,
-                            projectId : projects.length ? projects[0].id : '',
-                            projectName : projects.length ? projects[0].name : '',
-                            projectEffect : projects.length ? projects[0].effect : '',
-                            projectType : projects.length ? projects[0].type : '',
+                            admScope : getTagFromGroup(list[i], 'AD&M Scope') ? 'Yes' : 'No',
+                            cotsPackage : getTagFromGroup(list[i], 'COTS Package') ? 'Yes' : 'No',
+                            resourceId : resources.length ? resources[0].id : '',
+                            resourceName : resources.length ? resources[0].name : '',
+                            
+                            
+                            
+                            
+                            appType : getTagFromGroup(list[i], appTypes),
+                            
                             lifecyclePhase : currentLifecycle ? currentLifecycle.phase : '',
                             lifecycleStart : currentLifecycle ? currentLifecycle.startDate : ''
                         });
 
-                        if (projects.length) {
-                            if (projects[0].effect)
-                                projectEffects[projects[0].effect] = projects[0].effect;
-
-                            if (projects[0].type)
-                                projectTypes[projects[0].type] = projects[0].type;
-                        }
+                      
                     }
                 }
 
@@ -181,9 +181,9 @@ var ReportApplicationPortfolio = (function() {
                     return '<a href="' + that.reportSetup.baseUrl + '/services/' + row.id + '" target="_blank">' + cell + '</a>';
                 }
 
-                function linkProject(cell, row) {
-                    if (row.projectId)
-                        return '<a href="' + that.reportSetup.baseUrl + '/projects/' + row.projectId + '" target="_blank">' + cell + '</a>';
+                function linkResource(cell, row) {
+                    if (row.resourceId)
+                        return '<a href="' + that.reportSetup.baseUrl + '/resources/' + row.resourceId + '" target="_blank">' + cell + '</a>';
                 }
 
  	            function linkBC(cell, row) {
@@ -201,7 +201,11 @@ var ReportApplicationPortfolio = (function() {
                             <TableHeaderColumn dataField="lifecyclePhase" width="100" dataAlign="left" dataSort={true} filter={{type: "SelectFilter", options: getLookup(lifecycleArray)}}>Phase</TableHeaderColumn>
                             <TableHeaderColumn dataField="market" width="80" dataAlign="left" dataSort={true} filter={{type: "SelectFilter", options: markets}}>Market</TableHeaderColumn>
                             <TableHeaderColumn dataField="costCentre" width="120" dataAlign="left" dataSort={true} filter={{type: "SelectFilter", options: getLookup(costCentres)}}>Cost Centre</TableHeaderColumn>
-                           
+                            <TableHeaderColumn dataField="admScope" width="120" dataAlign="left" dataSort={true} filter={{type: "SelectFilter", options: getLookup(['Yes', 'No'])}}>In AD&M Scope</TableHeaderColumn>
+                            <TableHeaderColumn dataField="cotsPackage" width="120" dataAlign="left" dataSort={true} filter={{type: "SelectFilter", options: getLookup(['Yes', 'No'])}}>COTS Package</TableHeaderColumn>
+                            <TableHeaderColumn dataField="resourceName" dataAlign="left" dataSort={true} dataFormat={linkResource} filter={{type: "TextFilter", placeholder: "Please enter a value"}}>COTS Software</TableHeaderColumn>
+                          
+
 
                            </BootstrapTable>
                     </div>,
