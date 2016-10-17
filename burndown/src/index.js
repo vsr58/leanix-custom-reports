@@ -14,17 +14,15 @@ $(function () {
 
   var baseUrl = decodeURIComponent(args.baseUrl);
   var apiBaseUrl = decodeURIComponent(args.apiBaseUrl);
-
-  if (args.token) {
-    var token = args.token;
-  }
-  else if (args.apiKey) {
-    var apiKey = args.apiKey;
-  }
-
-  var type = 'services';
+  var token = args.token;
+  
+ var type = 'services';
   if (args.type) {
     type = args.type;
+  }
+    
+  if (args.tagFilter) {
+    var tagFilter = args.tagFilter;
   }
 
   $.ajaxSetup({
@@ -77,7 +75,7 @@ $(function () {
         var added = 0;
         var retired = 0;
         for (var j = 0; j < data.length; j++) {
-          if (data[j].tags.indexOf('Application') != -1) {
+          if (!tagFilter || data[j].tags.indexOf(tagFilter) != -1) {
             var nextLc = getLifecycleAt(data[j], categories[i + 1]);
             var lc = getLifecycleAt(data[j], categories[i]);
             if (lc) {
@@ -150,8 +148,6 @@ $(function () {
 
     return current;
   };
-
-
 
 
   function display(categories, newApps, retiredApps, totalApps) {
