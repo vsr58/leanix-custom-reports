@@ -1,0 +1,24 @@
+{
+  "name": "burndown",
+  "version": "0.0.1",
+  "description": "Burndown",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "d3": "3.5.11",
+    "jquery": "2.1.4",
+    "lodash": "3.10.1",
+    "toastr": "2.1.2"
+  },
+  "devDependencies": {
+    "browser-sync": "2.10.1",
+    "del": "2.2.0",
+    "gulp": "3.9.0",
+    "gulp-concat": "2.6.0",
+    "gulp-serve": "1.2.0"
+  }
+}
