@@ -49866,326 +49866,17 @@ var FactSheetIndex = (function() {
 
     return FactSheetIndex;
 })();
-var ReportCapabilitySpend = (function() {
-    function ReportCapabilitySpend(reportSetup, tagFilter, title) {
-        this.reportSetup = reportSetup;
-        this.tagFilter = tagFilter;
-        this.title = title;
-    }
-
-    ReportCapabilitySpend.prototype.render = function() {
-        var that = this;
-
-        var factSheetPromise = $.get(this.reportSetup.apiBaseUrl + '/factsheets?relations=true&types[]=10&types[]=18&pageSize=-1')
-            .then(function (response) {
-                return response.data;
-            });
-
-        $.when(factSheetPromise)
-            .then(function (data) {
-
-                var fsIndex = new FactSheetIndex(data);
-
-                for (var id in fsIndex.index.businessCapabilities) {
-                    var item = fsIndex.index.businessCapabilities[id];
-                    item['stats'] = {
-                        'services' : [],
-                        'serviceCost' : 0
-                    };
-                    item['serviceCost'] = 0;
-                }
-
-                for (var id in fsIndex.index.services) {
-                    var ids = [];
-                    var service = fsIndex.index.services[id];
-                    if (service.serviceHasBusinessCapabilities && service.serviceHasBusinessCapabilities.length) {
-                        ids = service.serviceHasBusinessCapabilities.map(function(item) {
-                            return item.businessCapabilityID;
-                        });
-                    }
-
-                    var serviceCost = 0;
-                    if (service.serviceHasResources) {
-                        service.serviceHasResources.forEach(function(item) {
-                            if (item.costTotalAnnual)
-                                serviceCost += item.costTotalAnnual;
-                        });
-                    }
-
-                    ids.forEach(function(id) {
-                        if (fsIndex.index.businessCapabilities[id]) {
-                            fsIndex.index.businessCapabilities[id].stats.services.push(service.ID);
-                            fsIndex.index.businessCapabilities[id].stats.serviceCost = serviceCost;
-                        } else {
-                            console.warn('Unable to find item with id = ' + id);
-                        }
-                    });
-
-                }
-
-                // products will be presented by react-bootstrap-table
-
-                var list = fsIndex.getSortedList('businessCapabilities');
-
-                var output = [];
-                for (var i = 0; i < list.length; i++) {
-                    if (!that.tagFilter || list[i].tags.indexOf(that.tagFilter) != -1)  {
-                        output.push({
-                            name : list[i].fullName,
-                            id : list[i].ID,
-                            cost : list[i].stats.serviceCost,
-                            count : list[i].stats.services.length,
-                            avgCost : list[i].stats.services.length ? list[i].stats.serviceCost / list[i].stats.services.length : 0
-                        });
-                    }
-                }
-
-                function moneyFormatter(cell, row) {
-                    return '&pound' + accounting.formatMoney(cell, "", 0, ",", ".");
-                }
-
-                function link(cell, row) {
-                    return '<a href="' + that.reportSetup.baseUrl + '/businessCapabilities/' + row.id + '" target="_blank">' + cell + '</a>';
-                }
-
-                var options = {
-                    sortName : 'cost',
-                    sortOrder : 'desc'
-                };
-
-                var options = $.extend({}, BootstrapTable.defaultProps.options, options);
-
-                ReactDOM.render(
-                    React.createElement("div", null, 
-                        React.createElement(BootstrapTable, {data: output, striped: true, hover: true, search: true, exportCSV: true, options: options}, 
-                            React.createElement(TableHeaderColumn, {dataField: "name", isKey: true, dataAlign: "left", dataSort: true, dataFormat: link}, "Business Capability"), 
-                            React.createElement(TableHeaderColumn, {dataField: "count", width: "200", dataSort: true}, "# of apps"), 
-                            React.createElement(TableHeaderColumn, {dataField: "avgCost", width: "200", dataSort: true, dataFormat: moneyFormatter}, "Avg cost per app"), 
-                            React.createElement(TableHeaderColumn, {dataField: "cost", width: "200", dataSort: true, dataFormat: moneyFormatter}, "Total cost all apps")
-                        )
-                    ),
-                    document.getElementById("app")
-                );
-            });
-    };
-
-    return ReportCapabilitySpend;
-})();
-var ReportProcessSpend = (function() {
-    function ReportProcessSpend(reportSetup) {
-        this.reportSetup = reportSetup;
-    }
-
-    ReportProcessSpend.prototype.render = function() {
-        var that = this;
-
-        var factSheetPromise = $.get(this.reportSetup.apiBaseUrl + '/factsheets?relations=true&types[]=10&types[]=22&pageSize=-1')
-            .then(function (response) {
-                return response.data;
-            });
-
-        $.when(factSheetPromise)
-            .then(function (data) {
-
-                var fsIndex = new FactSheetIndex(data);
-
-                for (var id in fsIndex.index.processes) {
-                    var item = fsIndex.index.processes[id];
-                    item['stats'] = {
-                        'services' : [],
-                        'serviceCost' : 0
-                    };
-                    item['serviceCost'] = 0;
-                }
-
-                for (var id in fsIndex.index.services) {
-                    var ids = [];
-                    var service = fsIndex.index.services[id];
-                    if (service.serviceHasProcesses && service.serviceHasProcesses.length) {
-                        ids = service.serviceHasProcesses.map(function(item) {
-                            return item.processID;
-                        });
-                    }
-
-                    var serviceCost = 0;
-                    if (service.serviceHasResources) {
-                        service.serviceHasResources.forEach(function(item) {
-                            if (item.costTotalAnnual)
-                                serviceCost += item.costTotalAnnual;
-                        });
-                    }
-
-                    ids.forEach(function(id) {
-                        if (fsIndex.index.processes[id]) {
-                            fsIndex.index.processes[id].stats.services.push(service.ID);
-                            fsIndex.index.processes[id].stats.serviceCost = serviceCost;
-                        } else {
-                            console.warn('Unable to find item with id = ' + id);
-                        }
-                    });
-
-                }
-
-                // products will be presented by react-bootstrap-table
-
-                var list = fsIndex.getSortedList('processes');
-
-                var output = [];
-                for (var i = 0; i < list.length; i++) {
-                    output.push({
-                        name : list[i].fullName,
-                        id : list[i].ID,
-                        cost : list[i].stats.serviceCost,
-                        count : list[i].stats.services.length,
-                        avgCost : list[i].stats.services.length ? list[i].stats.serviceCost / list[i].stats.services.length : 0
-                    });
-                }
-
-                function moneyFormatter(cell, row) {
-                    return '&pound' + accounting.formatMoney(cell, "", 0, ",", ".");
-                }
-
-                function link(cell, row) {
-                    return '<a href="' + that.reportSetup.baseUrl + '/processes/' + row.id + '" target="_blank">' + cell + '</a>';
-                }
-
-                var options = {
-                    sortName : 'cost',
-                    sortOrder : 'desc'
-                };
-
-                var options = $.extend({}, BootstrapTable.defaultProps.options, options);
-
-                ReactDOM.render(
-                    React.createElement("div", null, 
-                        React.createElement(BootstrapTable, {data: output, striped: true, hover: true, search: true, exportCSV: true, options: options}, 
-                            React.createElement(TableHeaderColumn, {dataField: "name", isKey: true, dataAlign: "left", dataSort: true, dataFormat: link}, "Process"), 
-                            React.createElement(TableHeaderColumn, {dataField: "count", dataSort: true}, "# of apps"), 
-                            React.createElement(TableHeaderColumn, {dataField: "avgCost", dataSort: true, dataFormat: moneyFormatter}, "Avg cost per app"), 
-                            React.createElement(TableHeaderColumn, {dataField: "cost", dataSort: true, dataFormat: moneyFormatter}, "Total cost all apps")
-                        )
-                    ),
-                    document.getElementById("app")
-                );
-            });
-    };
-
-    return ReportProcessSpend;
-})();
-var ReportHierarchy = (function() {
-    function ReportHierarchy(reportSetup, tagFilter, title) {
-        this.reportSetup = reportSetup;
-        this.tagFilter = tagFilter;
-        this.title = title;
-        this.maxLevel = 3;
-    }
-
-    ReportHierarchy.prototype.render = function() {
-        var that = this;
-
-        var factSheetPromise = $.get(this.reportSetup.apiBaseUrl + '/businessCapabilities?pageSize=-1')
-            .then(function (response) {
-                return response;
-            });
-
-        $.when(factSheetPromise)
-            .then(function (data) {
-
-                var fsIndex = new FactSheetIndex(data);
-
-                for (var id in fsIndex.index.businessCapabilities) {
-                    var item = fsIndex.index.businessCapabilities[id];
-                }
-
-                // products will be presented by react-bootstrap-table
-
-                var list = fsIndex.getSortedList('businessCapabilities');
-
-                var output = [];
-                for (var i = 0; i < list.length; i++) {
-                    if (list[i].level >= that.maxLevel)
-                        continue;
-
-                    if (!that.tagFilter || list[i].tags.indexOf(that.tagFilter) != -1)  {
-
-                        var hierarchy = {};
-                        for (var z = 0; z < that.maxLevel; z++) {
-                            hierarchy['L' + z] = null;
-                        }
-
-                        var tmp = list[i];
-
-                        while (tmp != null) {
-                            hierarchy['L' + tmp.level] = tmp;
-                            tmp = fsIndex.getParent('businessCapabilities', tmp.ID);
-                        }
-
-                        output.push({
-                            name : list[i].fullName,
-                            level : list[i].level + 1,
-                            id : list[i].ID,
-                            description : list[i].description,
-                            hierarchy : hierarchy,
-                            hierarchyL0Name : hierarchy.L0 ? hierarchy.L0.fullName : '',
-                            hierarchyL1Name : hierarchy.L1 ? hierarchy.L1.fullName : '',
-                            hierarchyL2Name : hierarchy.L2 ? hierarchy.L2.fullName : ''
-                        });
-                    }
-                }
-
-                function linkL0(cell, row) {
-                    if (row.hierarchy.L0)
-                        return '<a href="' + that.reportSetup.baseUrl + '/businessCapabilities/' + row.hierarchy.L0.ID + '" target="_blank">' + cell + '</a>';
-                }
-
-                function linkL1(cell, row) {
-                    if (row.hierarchy.L1)
-                        return '<a href="' + that.reportSetup.baseUrl + '/businessCapabilities/' + row.hierarchy.L1.ID + '" target="_blank">' + cell + '</a>';
-                }
-
-                function linkL2(cell, row) {
-                    if (row.hierarchy.L2)
-                        return '<a href="' + that.reportSetup.baseUrl + '/businessCapabilities/' + row.hierarchy.L2.ID + '" target="_blank">' + cell + '</a>';
-                }
-
-                function trClassFormat(rowData,rIndex){
-                    return 'tr-level-' + rowData.level;
-                }
-
-                var levels = [];
-
-                for (var z = 0; z < that.maxLevel; z++) {
-                    levels.push(z + 1);
-                }
-
-                ReactDOM.render(
-                    React.createElement("div", {className: "report-hierarchy"}, 
-                        React.createElement(BootstrapTable, {data: output, striped: false, hover: false, search: true, exportCSV: true, trClassName: trClassFormat}, 
-                            React.createElement(TableHeaderColumn, {dataField: "id", isKey: true, hidden: true}, "ID"), 
-                            React.createElement(TableHeaderColumn, {dataField: "level", width: "150", dataAlign: "left", dataSort: false, filter: {type: "NumberFilter", options: levels, numberComparators: ['<='], defaultValue: {comparator: '<='}}}, "Level"), 
-                            React.createElement(TableHeaderColumn, {dataField: "hierarchyL0Name", width: "200", dataAlign: "left", dataSort: false, dataFormat: linkL0}, "L1 Domain"), 
-                            React.createElement(TableHeaderColumn, {dataField: "hierarchyL1Name", width: "200", dataAlign: "left", dataSort: false, dataFormat: linkL1}, "L2 Domain"), 
-                            React.createElement(TableHeaderColumn, {dataField: "hierarchyL2Name", width: "200", dataAlign: "left", dataSort: false, dataFormat: linkL2}, "L3 Domain"), 
-                            React.createElement(TableHeaderColumn, {dataField: "description"}, "Domain Definition")
-                        )
-                    ),
-                    document.getElementById("app")
-                );
-            });
-    };
-
-    return ReportHierarchy;
-})();
-var ReportDataQuality = (function() {
+var ReportDataQuality = (function () {
     function ReportDataQuality(reportSetup, tagFilter) {
         this.reportSetup = reportSetup;
         this.tagFilter = tagFilter;
     }
 
-    ReportDataQuality.prototype.render = function() {
+    ReportDataQuality.prototype.render = function () {
         var that = this;
 
-        var factSheetPromise = $.get(this.reportSetup.apiBaseUrl + '/factsheets?relations=true&types[]=10&types[]=16&pageSize=-1')
+        var factSheetPromise = $.get(this.reportSetup.apiBaseUrl + '/factsheets?relations=true&'
+            + 'types[]=10&types[]=12&types[]=18&filterRelations[]=serviceHasConsumers&filterRelations[]=serviceHasBusinessCapabilities&pageSize=-1')
             .then(function (response) {
                 return response.data;
             });
@@ -50198,7 +49889,7 @@ var ReportDataQuality = (function() {
                 var list = fsIndex.getSortedList('services');
 
 
-                var getLookup = function(data) {
+                var getLookup = function (data) {
                     var ret = {};
                     for (var i = 0; i < data.length; i++) {
                         ret[data[i]] = data[i];
@@ -50212,51 +49903,33 @@ var ReportDataQuality = (function() {
 
                 var groupedByMarket = {};
 
-                function getGreenToRed(percent){
-                    var r = percent<50 ? 255 : Math.floor(255-(percent*2-100)*255/100);
-                    var g = percent>50 ? 255 : Math.floor((percent*2)*255/100);
-                    return 'rgb('+r+','+g+',0)';
+                function getGreenToRed(percent) {
+                    var r = percent < 50 ? 255 : Math.floor(255 - (percent * 2 - 100) * 255 / 100);
+                    var g = percent > 50 ? 255 : Math.floor((percent * 2) * 255 / 100);
+                    return 'rgb(' + r + ',' + g + ',0)';
                 }
 
                 for (var i = 0; i < list.length; i++) {
-                    if (!that.tagFilter || list[i].tags.indexOf(that.tagFilter) != -1)  {
+                    if (!that.tagFilter || list[i].tags.indexOf(that.tagFilter) != -1) {
 
+                        for (var z = 0; z < list[i].serviceHasConsumers.length; z++) {
+                            var tmp = list[i].serviceHasConsumers[z];
+                            if (tmp) {
+                                if (tmp.consumerID && fsIndex.index.consumers[tmp.consumerID]) {
 
-                        // Extract market
-                        var re = /^([A-Z]{2,3})_/;
-                        var market = '';
+                                    if (!(tmp.consumerID in groupedByMarket))
+                                        groupedByMarket[tmp.consumerID] = [];
 
-                        if ((m = re.exec(list[i].fullName)) !== null) {
-                            if (m.index === re.lastIndex) {
-                                re.lastIndex++;
+                                    groupedByMarket[tmp.consumerID].push(list[i]);
+                                }
                             }
-                            // View your result using the m-variable.
-                            market = m[1];
                         }
-
-                        if (!market)
-                            market = "n/a";
-
-                        if (market)
-                            markets[market] = market;
-
-                        var item = {
-                            name : list[i].fullName,
-                            type : 'App',
-                            id : list[i].ID,
-                            market : market,
-                            completion : Math.floor(list[i].completion * 100),
-                            count : ''
-                        };
-
-                        if (!(market in groupedByMarket))
-                            groupedByMarket[market] = [];
-
-                        groupedByMarket[market].push(item);
                     }
                 }
 
                 for (var key in groupedByMarket) {
+                    var compliant = [];
+                    var noncompliant = [];
 
                     var sum = 0;
                     for (var i = 0; i < groupedByMarket[key].length; i++) {
@@ -50264,50 +49937,80 @@ var ReportDataQuality = (function() {
                             sum += groupedByMarket[key][i].completion;
                     }
 
-                    groupedByMarket[key].sort(function(a, b) {
-                        return a.completion - b.completion;
-                    });
+                    pushToOutput(output, key, 'Adding applications', 14, 2);
+                    pushToOutput(output, key, 'Retiring applications', 8, 0);
 
-                    var avg = sum / groupedByMarket[key].length;
-
-                    output.push({
-                        name : key + ' (' + groupedByMarket[key].length + ' Applications)',
-                        type : 'Market',
-                        id : key,
-                        market : key,
-                        completion : Math.floor(avg)
-                    });
-
+                    rule = 'has COBRA'; // done
+                    compliant[rule] = 0;
+                    noncompliant[rule] = 0;
                     for (var i = 0; i < groupedByMarket[key].length; i++) {
-                        output.push(groupedByMarket[key][i]);
+                        var c = false;
+                        for (var z = 0; z < groupedByMarket[key][i].serviceHasBusinessCapabilities.length; z++) {
+                            var tmp = groupedByMarket[key][i].serviceHasBusinessCapabilities[z];
+                            if (tmp && tmp.businessCapabilityID) {
+                                var bc = fsIndex.index.businessCapabilities[tmp.businessCapabilityID];
+                                if (bc && bc.tags.indexOf('Cobra') != -1) {
+                                    c = true;
+                                    break;
+                                } 
+                            }
+                        }
+                        if (c) compliant[rule]++; else noncompliant[rule]++;
                     }
+                    pushToOutput(output, key, 'has COBRA', compliant, noncompliant, 
+'type=10&serviceHasConsumers[]=' + key + '&serviceHasBusinessCapabilities[]=tag-150000019&serviceHasBusinessCapabilities_op=NOR&tags_service_type[]=Application');
+                    
+                    pushToOutput(output, key, 'has COTS Package', 63, 0);
+                    pushToOutput(output, key, 'has COTS Supplier', 63, 0);
+                    pushToOutput(output, key, 'has Cost Centre', 14, 2); // todo tag
+                    pushToOutput(output, key, 'has Deployment Lifecycle', 14, 2);
+
+                    rule = 'has Description'; // done
+                    compliant[rule] = 0;
+                    noncompliant[rule] = 0;
+                    for (var i = 0; i < groupedByMarket[key].length; i++) {
+                        if (groupedByMarket[key][i].description) compliant[rule]++; else noncompliant[rule]++;
+                    }
+                    pushToOutput(output, key, rule, compliant, noncompliant, 'type=10&serviceHasConsumers[]=' + key + '&quality[]=4');
+
+                    pushToOutput(output, key, 'has IT Owner', 14, 2);
+                    pushToOutput(output, key, 'has SPOC', 14, 2);
+                    pushToOutput(output, key, 'has Software Product', 14, 2);
+
+                }
+
+                function pushToOutput(output, key, rule, compliant, noncompliant, url) {
+                    output.push({
+                        rule: rule,
+                        id: key,
+                        market: fsIndex.index.consumers[key] ? fsIndex.index.consumers[key].name : '',
+                        compliant: compliant[rule],
+                        noncompliant: noncompliant[rule],
+                        percentage: 100 - Math.floor(noncompliant[rule] / (compliant[rule] + noncompliant[rule]) * 100),
+                        url: url
+                    });
+
                 }
 
 
                 function link(cell, row) {
-                    if (row.type != 'Market')
-                        return '<a href="' + that.reportSetup.baseUrl + '/services/' + row.id + '" target="_blank">' + cell + '</a>';
-                    else
-                        return '<b>' + cell + '</b>';
+                    return '<a href="' + that.reportSetup.baseUrl + '/inventory?' + row.url + '" target="_blank">' + cell + '</a>';
                 }
 
 
                 function percentage(cell, row) {
-                    return  '<div class="percentage" style="background-color: ' + getGreenToRed(cell) + ';">' + cell + ' %</div>';
-                }
-
-                function trClassFormat(rowData,rIndex){
-                    return 'tr-type-' + rowData.type.toLowerCase();
+                    return '<div class="percentage" style="background-color: ' + getGreenToRed(cell) + ';">' + cell + ' %</div>';
                 }
 
                 ReactDOM.render(
                     React.createElement("div", {className: "report-data-quality"}, 
-                        React.createElement(BootstrapTable, {data: output, striped: false, hover: true, search: true, condensed: true, exportCSV: true, trClassName: trClassFormat}, 
+                        React.createElement(BootstrapTable, {data: output, striped: false, hover: true, search: true, condensed: true, exportCSV: true}, 
                             React.createElement(TableHeaderColumn, {dataField: "id", isKey: true, hidden: true}, "ID"), 
-                            React.createElement(TableHeaderColumn, {dataField: "type", width: "80", filter: {type: "SelectFilter", options: {Market: 'Market'}}}, "Type"), 
-                            React.createElement(TableHeaderColumn, {dataField: "market", width: "80", dataAlign: "left", dataSort: false, filter: {type: "SelectFilter", options: markets}}, "Market"), 
-                            React.createElement(TableHeaderColumn, {dataField: "name", dataAlign: "left", dataSort: true, dataFormat: link, filter: {type: "TextFilter", placeholder: "Please enter a value"}}, "Application Name"), 
-                            React.createElement(TableHeaderColumn, {dataField: "completion", dataAlign: "left", dataSort: true, dataFormat: percentage, filter: {type: "NumberFilter", defaultValue: {comparator: '<='}}}, "Completion")
+                            React.createElement(TableHeaderColumn, {dataField: "market", width: "80", dataAlign: "left", dataSort: false, filter: { type: "SelectFilter", options: markets}}, "Market"), 
+                            React.createElement(TableHeaderColumn, {dataField: "rule", dataAlign: "left", dataSort: true, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "Rule"), 
+                            React.createElement(TableHeaderColumn, {dataField: "compliant", dataAlign: "left", dataSort: true, filter: { type: "NumberFilter", defaultValue: { comparator: '<=' }}}, "Compliant"), 
+                            React.createElement(TableHeaderColumn, {dataField: "noncompliant", dataAlign: "left", dataSort: true, dataFormat: link, filter: { type: "NumberFilter", defaultValue: { comparator: '<=' }}}, "Non-Compliant"), 
+                            React.createElement(TableHeaderColumn, {dataField: "percentage", dataAlign: "left", dataSort: true, dataFormat: percentage, filter: { type: "NumberFilter", defaultValue: { comparator: '<=' }}}, "% Compliant")
                         )
                     ),
                     document.getElementById("app")
@@ -50317,78 +50020,6 @@ var ReportDataQuality = (function() {
 
     return ReportDataQuality;
 })();
-var ReportDataQualityServices = (function() {
-    function ReportDataQuality(reportSetup, tagFilter) {
-        this.reportSetup = reportSetup;
-        this.tagFilter = tagFilter;
-    }
-
-    ReportDataQuality.prototype.render = function() {
-        var that = this;
-
-        var factSheetPromise = $.get(this.reportSetup.apiBaseUrl + '/factsheets?relations=true&types[]=10&pageSize=-1')
-            .then(function (response) {
-                return response.data;
-            });
-
-        $.when(factSheetPromise)
-            .then(function (data) {
-                var fsIndex = new FactSheetIndex(data);
-                var list = fsIndex.getSortedList('services');
-
-                var output = [];
-                function getGreenToRed(percent){
-                    var r = percent<50 ? 255 : Math.floor(255-(percent*2-100)*255/100);
-                    var g = percent>50 ? 255 : Math.floor((percent*2)*255/100);
-                    return 'rgb('+r+','+g+',0)';
-                }
-
-                for (var i = 0; i < list.length; i++) {
-                    if (!that.tagFilter || list[i].tags.indexOf(that.tagFilter) != -1)  {
-
-                        var item = {
-                            name : list[i].fullName,
-                            type : 'App',
-                            id : list[i].ID,
-                            completion : Math.floor(list[i].completion * 100),
-                            count : ''
-                        };
-
-                        output.push(item);
-                    }
-                }
-
-                function link(cell, row) {
-                    if (row.type != 'Market')
-                        return '<a href="' + that.reportSetup.baseUrl + '/services/' + row.id + '" target="_blank">' + cell + '</a>';
-                    else
-                        return '<b>' + cell + '</b>';
-                }
-
-                function percentage(cell, row) {
-                    return  '<div class="percentage" style="background-color: ' + getGreenToRed(cell) + ';">' + cell + ' %</div>';
-                }
-
-                function trClassFormat(rowData,rIndex){
-                    return 'tr-type-' + rowData.type.toLowerCase();
-                }
-
-                ReactDOM.render(
-                    React.createElement("div", {className: "report-data-quality"}, 
-                        React.createElement(BootstrapTable, {data: output, striped: true, hover: true, search: true, condensed: true, exportCSV: true, trClassName: trClassFormat}, 
-                            React.createElement(TableHeaderColumn, {dataField: "id", isKey: true, hidden: true}, "ID"), 
-                            React.createElement(TableHeaderColumn, {dataField: "name", dataAlign: "left", dataSort: true, dataFormat: link, filter: {type: "TextFilter", placeholder: "Please enter a value"}}, "Application Name"), 
-                            React.createElement(TableHeaderColumn, {dataField: "completion", dataAlign: "left", dataSort: true, dataFormat: percentage, filter: {type: "NumberFilter", defaultValue: {comparator: '<='}}}, "Completion")
-                        )
-                    ),
-                    document.getElementById("app")
-                );
-            });
-    };
-
-    return ReportDataQuality;
-})();
-
 var ReportApplicationLifecycle = (function() {
     function ReportApplicationLifecycle(reportSetup, tagFilter, title) {
         this.reportSetup = reportSetup;
@@ -50591,6 +50222,296 @@ var ReportApplicationLifecycle = (function() {
 
     return ReportApplicationLifecycle;
 })();
+var ReportApplicationPortfolio = (function () {
+    function ReportApplicationPortfolio(reportSetup, tagFilter, title) {
+        this.reportSetup = reportSetup;
+        this.tagFilter = tagFilter;
+        this.title = title;
+    }
+
+    ReportApplicationPortfolio.prototype.render = function () {
+        var that = this;
+
+        var factSheetPromise = $.get(this.reportSetup.apiBaseUrl +
+            '/factsheets?relations=true&types[]=10&types[]=18&types[]=19' +
+            '&filterRelations[]=serviceHasBusinessCapabilities' +
+            '&filterRelations[]=factSheetHasLifecycles&' +
+            '&filterRelations[]=serviceHasResources&pageSize=-1')
+            .then(function (response) {
+                return response.data;
+            });
+
+        $.when(factSheetPromise)
+            .then(function (data) {
+
+                var fsIndex = new FactSheetIndex(data);
+
+                var list = fsIndex.getSortedList('services');
+
+                var lifecycles = {
+                    1: "Plan",
+                    2: "Phase In",
+                    3: "Active",
+                    4: "Phase Out",
+                    5: "End of Life"
+                };
+
+                var lifecycleArray = [];
+                for (var key in lifecycles) {
+                    lifecycleArray.push(lifecycles[key]);
+                }
+
+                function formattedDate(date) {
+                    var d = new Date(date || Date.now()),
+                        month = '' + (d.getMonth() + 1),
+                        day = '' + d.getDate(),
+                        year = d.getFullYear();
+
+                    if (month.length < 2) month = '0' + month;
+                    if (day.length < 2) day = '0' + day;
+
+                    return [month, day, year].join('/');
+                }
+
+                var getCurrentLifecycle = function (item) {
+                    item.factSheetHasLifecycles = item.factSheetHasLifecycles.sort(function (a, b) {
+                        return a.lifecycleStateID > b.lifecycleStateID;
+                    });
+
+                    var current = null;
+
+                    for (var i = 0; i < item.factSheetHasLifecycles.length; i++) {
+                        var curDate = Date.parse(item.factSheetHasLifecycles[i].startDate);
+                        if (curDate <= Date.now()) {
+                            current = {
+                                phase: lifecycles[item.factSheetHasLifecycles[i].lifecycleStateID],
+                                startDate: formattedDate(curDate)
+                            };
+                        }
+                    }
+
+                    return current;
+                };
+
+                var getTagFromGroup = function (object, validTags) {
+                    var cc = object.tags.filter(function (x) {
+                        if (validTags.indexOf(x) >= 0)
+                            return true;
+                        else
+                            return false;
+                    });
+
+                    if (cc.length)
+                        return cc[0];
+
+                    return '';
+                };
+
+                var getLookup = function (data) {
+                    var ret = {};
+                    for (var i = 0; i < data.length; i++) {
+                        ret[data[i]] = data[i];
+                    }
+
+                    return ret;
+                };
+
+                var output = [];
+                var markets = {};
+                var projectEffects = {};
+                var projectTypes = {};
+
+                var costCentres = ['IT', 'Network', 'Remedy', 'Marketing'];
+                var appTypes = ['Group owned - locally used', 'Locally owned'];
+                var appTypes = ['Group owned - locally used', 'Locally owned'];
+
+                var businessValue = {
+                    4: "4-High",
+                    3: "3-Med/High",
+                    2: "2-Low/Med",
+                    1: "1-Low"
+                };
+                var businessValueOptions = [];
+                for (var key in businessValue) {
+                    businessValueOptions.push(businessValue[key]);
+                }
+
+                var technicalCondition = {
+                    4: "4-High",
+                    3: "3-Med/High",
+                    2: "2-Low/Med",
+                    1: "1-Low"
+                };
+                var technicalConditionOptions = [];
+                for (var key in technicalCondition) {
+                    technicalConditionOptions.push(technicalCondition[key]);
+                }
+
+
+
+                for (var i = 0; i < list.length; i++) {
+                    if (!that.tagFilter || list[i].tags.indexOf(that.tagFilter) != -1) {
+
+                        var currentLifecycle = getCurrentLifecycle(list[i]);
+
+
+
+                        var lifecycleArray = [];
+                        for (var key in lifecycles) {
+                            lifecycleArray.push(lifecycles[key]);
+                        }
+
+
+
+                        // Extract market
+                        var re = /^([A-Z]{2,3})_/;
+                        var market = '';
+
+                        if ((m = re.exec(list[i].fullName)) !== null) {
+                            if (m.index === re.lastIndex) {
+                                re.lastIndex++;
+                            }
+                            // View your result using the m-variable.
+                            market = m[1];
+                            if (market)
+                                markets[market] = market;
+                        }
+
+                        var resources = [];
+                        var remedy = [];
+                        var support = [];
+                        for (var z = 0; z < list[i].serviceHasResources.length; z++) {
+                            var tmp = list[i].serviceHasResources[z];
+                            if (tmp) {
+                                if (tmp.resourceID && fsIndex.index.resources[tmp.resourceID]) {
+
+                                    if (fsIndex.index.resources[tmp.resourceID].tags.indexOf('Remedy Business Service') != -1) {
+                                        remedy.push({
+                                            id: tmp.resourceID,
+                                            name: fsIndex.index.resources[tmp.resourceID].fullName,
+                                        });
+                                    } else if (fsIndex.index.resources[tmp.resourceID].objectCategoryID == 3) {
+                                        support.push({
+                                            id: tmp.resourceID,
+                                            name: fsIndex.index.resources[tmp.resourceID].fullName,
+                                        });
+                                    } else {
+                                        resources.push({
+                                            id: tmp.resourceID,
+                                            name: fsIndex.index.resources[tmp.resourceID].fullName,
+                                        });
+                                    }
+                                }
+                            }
+                        }
+
+                        var cobras = [];
+                        for (var z = 0; z < list[i].serviceHasBusinessCapabilities.length; z++) {
+                            var tmp = list[i].serviceHasBusinessCapabilities[z];
+                            if (tmp) {
+                                if (tmp.businessCapabilityID && fsIndex.index.businessCapabilities[tmp.businessCapabilityID] &&
+                                    fsIndex.index.businessCapabilities[tmp.businessCapabilityID].tags.indexOf('Cobra') != -1) {
+
+                                    cobras.push({
+                                        id: tmp.businessCapabilityID,
+                                        name: fsIndex.index.businessCapabilities[tmp.businessCapabilityID].fullName,
+                                    })
+                                }
+                            }
+                        }
+
+
+                        output.push({
+                            name: list[i].fullName,
+                            description: list[i].description,
+                            cobraId: cobras.length ? cobras[0].id : '',
+                            cobraName: cobras.length ? cobras[0].name : '',
+                            id: list[i].ID,
+                            costCentre: getTagFromGroup(list[i], costCentres),
+                            market: market,
+                            admScope: getTagFromGroup(list[i], 'AD&M Scope') ? 'Yes' : 'No',
+                            cotsPackage: getTagFromGroup(list[i], 'COTS Package') ? 'Yes' : 'No',
+                            resourceId: resources.length ? resources[0].id : '',
+                            resourceName: resources.length ? resources[0].name : '',
+                            remedyID: remedy.length ? remedy[0].id : '',
+                            remedyName: remedy.length ? remedy[0].name : '',
+                            supportID: support.length ? support[0].id : '',
+                            supportName: support.length ? support[0].name : '',
+
+                            // TODO
+                            customisation: 'TBD',
+                            businessValue: list[i].functionalSuitabilityID ? businessValue[list[i].functionalSuitabilityID] : '',
+                            technicalCondition: list[i].technicalSuitabilityID ? technicalCondition[list[i].technicalSuitabilityID] : '',
+
+                            // TODO
+                            complexity: 'TBD',
+
+
+                            appType: getTagFromGroup(list[i], appTypes),
+
+                            lifecyclePhase: currentLifecycle ? currentLifecycle.phase : '',
+                            lifecycleStart: currentLifecycle ? currentLifecycle.startDate : ''
+                        });
+
+
+                    }
+                }
+
+
+                function link(cell, row) {
+                    return '<a href="' + that.reportSetup.baseUrl + '/services/' + row.id + '" target="_blank">' + cell + '</a>';
+                }
+
+                function linkResource(cell, row) {
+                    if (row.resourceId)
+                        return '<a href="' + that.reportSetup.baseUrl + '/resources/' + row.resourceId + '" target="_blank">' + cell + '</a>';
+                }
+
+                function linkRemedy(cell, row) {
+                    if (row.remedyID)
+                        return '<a href="' + that.reportSetup.baseUrl + '/resources/' + row.remedyID + '" target="_blank">' + cell + '</a>';
+                }
+
+                function linkSupport(cell, row) {
+                    if (row.supportID)
+                        return '<a href="' + that.reportSetup.baseUrl + '/resources/' + row.supportID + '" target="_blank">' + cell + '</a>';
+                }
+
+                function linkBC(cell, row) {
+                    if (row.cobraId)
+                        return '<a href="' + that.reportSetup.baseUrl + '/businessCapabilities/' + row.cobraId + '" target="_blank">' + cell + '</a>';
+                }
+
+                ReactDOM.render(
+                    React.createElement("div", null, 
+                        React.createElement(BootstrapTable, {data: output, striped: true, hover: true, search: true, pagination: true, exportCSV: true}, 
+                            React.createElement(TableHeaderColumn, {dataField: "id", isKey: true, hidden: true}, "ID"), 
+                            React.createElement(TableHeaderColumn, {dataField: "name", width: "150", dataAlign: "left", dataSort: true, dataFormat: link, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "Application Name"), 
+                            React.createElement(TableHeaderColumn, {dataField: "description", width: "150", dataAlign: "left", dataSort: true, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "Description"), 
+                            React.createElement(TableHeaderColumn, {dataField: "cobraName", width: "150", dataAlign: "left", dataSort: true, dataFormat: linkBC, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "COBRA"), 
+                            React.createElement(TableHeaderColumn, {dataField: "lifecyclePhase", width: "100", dataAlign: "left", dataSort: true, filter: { type: "SelectFilter", options: getLookup(lifecycleArray)}}, "Phase"), 
+                            React.createElement(TableHeaderColumn, {dataField: "market", width: "80", dataAlign: "left", dataSort: true, filter: { type: "SelectFilter", options: markets}}, "Market"), 
+                            React.createElement(TableHeaderColumn, {dataField: "costCentre", width: "120", dataAlign: "left", dataSort: true, filter: { type: "SelectFilter", options: getLookup(costCentres)}}, "Cost Centre"), 
+                            React.createElement(TableHeaderColumn, {dataField: "admScope", width: "120", dataAlign: "left", dataSort: true, filter: { type: "SelectFilter", options: getLookup(['Yes', 'No'])}}, "In AD&M Scope"), 
+                            React.createElement(TableHeaderColumn, {dataField: "cotsPackage", width: "120", dataAlign: "left", dataSort: true, filter: { type: "SelectFilter", options: getLookup(['Yes', 'No'])}}, "COTS Package"), 
+                            React.createElement(TableHeaderColumn, {dataField: "resourceName", width: "150", dataAlign: "left", dataSort: true, dataFormat: linkResource, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "COTS Software"), 
+                            React.createElement(TableHeaderColumn, {dataField: "remedyName", width: "150", dataAlign: "left", dataSort: true, dataFormat: linkRemedy, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "Remedy Business Service"), 
+                            React.createElement(TableHeaderColumn, {dataField: "supportName", width: "150", dataAlign: "left", dataSort: true, dataFormat: linkSupport, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "Supported By"), 
+                            React.createElement(TableHeaderColumn, {dataField: "customisation", width: "120", dataAlign: "left", dataSort: true, filter: { type: "SelectFilter", options: getLookup(['Yes', 'No'])}}, "Level of Customisation"), 
+                            React.createElement(TableHeaderColumn, {dataField: "businessValue", width: "120", dataAlign: "left", dataSort: true, filter: { type: "SelectFilter", options: getLookup(businessValueOptions)}}, "Business Value"), 
+                            React.createElement(TableHeaderColumn, {dataField: "technicalCondition", width: "120", dataAlign: "left", dataSort: true, filter: { type: "SelectFilter", options: getLookup(technicalConditionOptions)}}, "Technical Condition"), 
+                            React.createElement(TableHeaderColumn, {dataField: "complexity", width: "120", dataAlign: "left", dataSort: true, filter: { type: "SelectFilter", options: getLookup(technicalConditionOptions)}}, "Application Complexity")
+
+
+                        )
+                    ),
+                    document.getElementById("app")
+                );
+            });
+    };
+
+    return ReportApplicationPortfolio;
+})();
 (function () {
     'use strict';
 
@@ -50599,8 +50520,29 @@ var ReportApplicationLifecycle = (function() {
     switch (reportSetup.getArg('report')) {
         case 'test':
             break;
+        case 'app-portfolio':
+            var report = new ReportApplicationPortfolio(reportSetup, 'Application');
+            break;
+        case 'data-quality':
+            var report = new ReportDataQuality(reportSetup, 'Application');
+            break;
+
+
+
+        case 'vf1':
+            var report = new ReportApplicationLifecycle(reportSetup, 'Application');
+            break;
+        case 'vf2':
+            var report = new ReportApplicationPortfolio(reportSetup, 'Application');
+            break;
+        case 'vf3':
+            var report = new ReportDataQuality(reportSetup);
+            break;
         case 'app-lifecycle':
             var report = new ReportApplicationLifecycle(reportSetup);
+            break;
+        case 'app-portfolio':
+            var report = new ReportApplicationPortfolio(reportSetup);
             break;
         case 'process-spend':
             var report = new ReportProcessSpend(reportSetup);
@@ -50619,9 +50561,6 @@ var ReportApplicationLifecycle = (function() {
             break;
         case 'capability-spend-bca':
             var report = new ReportCapabilitySpend(reportSetup, 'BCA');
-            break;
-        case 'data-quality':
-            var report = new ReportDataQuality(reportSetup);
             break;
         case 'data-quality-services':
             var report = new ReportDataQualityServices(reportSetup);
