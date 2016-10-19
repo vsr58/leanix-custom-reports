@@ -6,17 +6,8 @@
     switch (reportSetup.getArg('report')) {
         case 'test':
             break;
-        case 'vf1':
-            var report = new ReportApplicationLifecycle(reportSetup, 'Application');
-            break;
-        case 'vf2':
-            var report = new ReportApplicationPortfolio(reportSetup, 'Application');
-            break;
         case 'app-lifecycle':
             var report = new ReportApplicationLifecycle(reportSetup);
-            break;
-        case 'app-portfolio':
-            var report = new ReportApplicationPortfolio(reportSetup);
             break;
         case 'process-spend':
             var report = new ReportProcessSpend(reportSetup);
