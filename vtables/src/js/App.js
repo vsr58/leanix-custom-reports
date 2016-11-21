@@ -7,14 +7,14 @@
         case 'app-lifecycle':
             var report = new ReportApplicationLifecycle(reportSetup, 'Application');
             break;
-    
+        case 'app-portfolio':
+            var report = new ReportApplicationPortfolio(reportSetup, 'Application');
+            break;    
     
     
         case 'test':
             break;
-        case 'app-portfolio':
-            var report = new ReportApplicationPortfolio(reportSetup, 'Application');
-            break;
+
         case 'data-quality':
             var report = new ReportDataQuality(reportSetup, 'Application');
             break;
