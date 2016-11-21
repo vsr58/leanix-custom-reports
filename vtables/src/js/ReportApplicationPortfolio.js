@@ -8,17 +8,41 @@ var ReportApplicationPortfolio = (function () {
     ReportApplicationPortfolio.prototype.render = function () {
         var that = this;
 
+        var tagGroupPromise = $.get(this.reportSetup.apiBaseUrl + '/tagGroups')
+            .then(function (response) {
+                var tagGroups = {};
+                for (var i = 0; i < response.length; i++) {
+                    tagGroups[response[i]['name']] = [];
+                    for (var j = 0; j < response[i]['tags'].length; j++) {
+                        tagGroups[response[i]['name']].push(response[i]['tags'][j]['name']);
+                    }
+                }
+                return tagGroups;
+            });
+
+
         var factSheetPromise = $.get(this.reportSetup.apiBaseUrl +
             '/factsheets?relations=true&types[]=10&types[]=18&types[]=19' +
             '&filterRelations[]=serviceHasBusinessCapabilities' +
-            '&filterRelations[]=factSheetHasLifecycles&' +
-            '&filterRelations[]=serviceHasResources&pageSize=-1')
+            '&filterRelations[]=factSheetHasLifecycles' +
+            '&filterRelations[]=serviceHasResources' +
+            '&filterAttributes[]=businessCriticalityID' +
+            '&filterAttributes[]=description' +
+            '&filterAttributes[]=displayName' +
+            '&filterAttributes[]=fullName' +
+            '&filterAttributes[]=functionalSuitabilityID' +
+            '&filterAttributes[]=ID' +
+            '&filterAttributes[]=resourceType' +
+            '&filterAttributes[]=objectCategoryID' +
+            '&filterAttributes[]=tags' +
+            '&filterAttributes[]=technicalSuitabilityID' +
+            '&pageSize=-1')
             .then(function (response) {
                 return response.data;
             });
 
-        $.when(factSheetPromise)
-            .then(function (data) {
+        $.when(tagGroupPromise, factSheetPromise)
+            .then(function (tagGroups, data) {
 
                 var fsIndex = new FactSheetIndex(data);
 
@@ -97,10 +121,14 @@ var ReportApplicationPortfolio = (function () {
                 var projectEffects = {};
                 var projectTypes = {};
 
-                var costCentres = ['IT', 'Network', 'Remedy', 'Marketing'];
-                var appTypes = ['Group owned - locally used', 'Locally owned'];
-                var appTypes = ['Group owned - locally used', 'Locally owned'];
-
+                var costCentres = tagGroups['Cost Centre'];
+                var appTypes = tagGroups['Application Type'];
+                var customisations = tagGroups['Customisation Level'];
+                var complexities = tagGroups['Application Complexity'];
+                var pciFlags = tagGroups['PCI Flag'];
+                var soxFlags = tagGroups['SOX Flag'];
+                var recommendations = tagGroups['Recommendation'];
+                
                 var businessValue = {
                     4: "4-High",
                     3: "3-Med/High",
@@ -123,6 +151,17 @@ var ReportApplicationPortfolio = (function () {
                     technicalConditionOptions.push(technicalCondition[key]);
                 }
 
+                var businessCriticality = {
+                    1: "4-High",
+                    2: "3-Med/High",
+                    3: "2-Low/Med",
+                    4: "1-Low"
+                };
+                var businessCriticalityOptions = [];
+                for (var key in businessCriticality) {
+                    businessCriticalityOptions.push(businessCriticality[key]);
+                }
+
 
 
                 for (var i = 0; i < list.length; i++) {
@@ -136,8 +175,6 @@ var ReportApplicationPortfolio = (function () {
                         for (var key in lifecycles) {
                             lifecycleArray.push(lifecycles[key]);
                         }
-
-
 
                         // Extract market
                         var re = /^([A-Z]{2,3})_/;
@@ -186,7 +223,7 @@ var ReportApplicationPortfolio = (function () {
                             var tmp = list[i].serviceHasBusinessCapabilities[z];
                             if (tmp) {
                                 if (tmp.businessCapabilityID && fsIndex.index.businessCapabilities[tmp.businessCapabilityID] &&
-                                    fsIndex.index.businessCapabilities[tmp.businessCapabilityID].tags.indexOf('Cobra') != -1) {
+                                    fsIndex.index.businessCapabilities[tmp.businessCapabilityID].tags.indexOf('AppMap') != -1) {
 
                                     cobras.push({
                                         id: tmp.businessCapabilityID,
@@ -214,21 +251,17 @@ var ReportApplicationPortfolio = (function () {
                             supportID: support.length ? support[0].id : '',
                             supportName: support.length ? support[0].name : '',
 
-                            // TODO
-                            customisation: 'TBD',
+                            customisation: getTagFromGroup(list[i], customisations),
                             businessValue: list[i].functionalSuitabilityID ? businessValue[list[i].functionalSuitabilityID] : '',
                             technicalCondition: list[i].technicalSuitabilityID ? technicalCondition[list[i].technicalSuitabilityID] : '',
-
-                            // TODO
-                            complexity: 'TBD',
-                            businessCriticality: 'TBD',
-
-
+                            complexity: getTagFromGroup(list[i], complexities),
+                            businessCriticality: list[i].businessCriticalityID ? businessCriticality[list[i].businessCriticalityID] : '',
                             appType: getTagFromGroup(list[i], appTypes),
-
-                            lifecyclePhase: currentLifecycle ? currentLifecycle.phase : '',
-                            lifecycleStart: currentLifecycle ? currentLifecycle.startDate : ''
-                        });
+                            pciFlag: getTagFromGroup(list[i], pciFlags),
+                            soxFlag: getTagFromGroup(list[i], soxFlags),
+                            recommendation: getTagFromGroup(list[i], recommendations),
+                            
+                             });
 
 
                     }
@@ -274,11 +307,16 @@ var ReportApplicationPortfolio = (function () {
                             <TableHeaderColumn dataField="resourceName" width="150" dataAlign="left" dataSort={true} dataFormat={linkResource} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>COTS Software</TableHeaderColumn>
                             <TableHeaderColumn dataField="remedyName" width="150" dataAlign="left" dataSort={true} dataFormat={linkRemedy} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>Remedy Business Service</TableHeaderColumn>
                             <TableHeaderColumn dataField="supportName" width="150" dataAlign="left" dataSort={true} dataFormat={linkSupport} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>Supported By</TableHeaderColumn>
-                            <TableHeaderColumn dataField="customisation" width="120" dataAlign="left" dataSort={true} filter={{ type: "SelectFilter", options: getLookup(['Yes', 'No']) }}>Level of Customisation</TableHeaderColumn>
+                            <TableHeaderColumn dataField="customisation" width="120" dataAlign="left" dataSort={true} filter={{ type: "SelectFilter", options: getLookup(customisations) }}>Level of Customisation</TableHeaderColumn>
                             <TableHeaderColumn dataField="businessValue" width="120" dataAlign="left" dataSort={true} filter={{ type: "SelectFilter", options: getLookup(businessValueOptions) }}>Business Value</TableHeaderColumn>
                             <TableHeaderColumn dataField="technicalCondition" width="120" dataAlign="left" dataSort={true} filter={{ type: "SelectFilter", options: getLookup(technicalConditionOptions) }}>Technical Condition</TableHeaderColumn>
-                            <TableHeaderColumn dataField="complexity" width="120" dataAlign="left" dataSort={true} filter={{ type: "SelectFilter", options: getLookup(technicalConditionOptions) }}>Application Complexity</TableHeaderColumn>
-
+                            <TableHeaderColumn dataField="complexity" width="120" dataAlign="left" dataSort={true} filter={{ type: "SelectFilter", options: getLookup(complexities) }}>Application Complexity</TableHeaderColumn>
+                            <TableHeaderColumn dataField="businessCriticality" width="120" dataAlign="left" dataSort={true} filter={{ type: "SelectFilter", options: getLookup(businessCriticalityOptions) }}>Business Criticality</TableHeaderColumn>
+                            <TableHeaderColumn dataField="appType" width="100" dataAlign="left" dataSort={true} filter={{ type: "SelectFilter", options: getLookup(appTypes) }}>App Type</TableHeaderColumn>
+                            <TableHeaderColumn dataField="soxFlag" width="100" dataAlign="left" dataSort={true} filter={{ type: "SelectFilter", options: getLookup(soxFlags) }}>SOX Flag</TableHeaderColumn>
+                            <TableHeaderColumn dataField="pciFlag" width="100" dataAlign="left" dataSort={true} filter={{ type: "SelectFilter", options: getLookup(pciFlags) }}>PCI Flag</TableHeaderColumn>
+                            <TableHeaderColumn dataField="recommendation" width="100" dataAlign="left" dataSort={true} filter={{ type: "SelectFilter", options: getLookup(recommendations) }}>Recommendation</TableHeaderColumn>
+                        
 
                         </BootstrapTable>
                     </div>,
