@@ -27,11 +27,7 @@ $(function () {
 
   $.ajaxSetup({
     beforeSend: function (xhr) {
-      if (token) {
-        xhr.setRequestHeader('Authorization', 'Bearer ' + token);
-      } else if (apiKey) {
-        xhr.setRequestHeader('X-Api-Key', apiKey);
-      }
+       xhr.setRequestHeader('Authorization', 'Bearer ' + token);
     }
   });
 
