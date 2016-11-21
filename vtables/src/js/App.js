@@ -4,6 +4,12 @@
     var reportSetup = new ReportSetup();
 
     switch (reportSetup.getArg('report')) {
+        case 'app-lifecycle':
+            var report = new ReportApplicationLifecycle(reportSetup, 'Application');
+            break;
+    
+    
+    
         case 'test':
             break;
         case 'app-portfolio':
@@ -23,9 +29,6 @@
             break;
         case 'vf3':
             var report = new ReportDataQuality(reportSetup);
-            break;
-        case 'app-lifecycle':
-            var report = new ReportApplicationLifecycle(reportSetup);
             break;
         case 'app-portfolio':
             var report = new ReportApplicationPortfolio(reportSetup);
