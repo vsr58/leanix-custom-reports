@@ -221,6 +221,7 @@ var ReportApplicationPortfolio = (function () {
 
                             // TODO
                             complexity: 'TBD',
+                            businessCriticality: 'TBD',
 
 
                             appType: getTagFromGroup(list[i], appTypes),
