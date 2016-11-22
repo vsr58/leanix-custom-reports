@@ -73,4 +73,13 @@ ReportUtils.prototype.getTagFromGroup = function (object, validTags) {
     return '';
 };
 
+ReportUtils.prototype.getLookup = function (data) {
+    var ret = {};
+    for (var i = 0; i < data.length; i++) {
+        ret[data[i]] = data[i];
+    }
+
+    return ret;
+};
+
 
