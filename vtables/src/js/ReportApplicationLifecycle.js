@@ -37,56 +37,11 @@ var ReportApplicationLifecycle = (function () {
 
         $.when(tagGroupPromise, factSheetPromise)
             .then(function (tagGroups, data) {
-
-
                 var fsIndex = new FactSheetIndex(data);
-
                 var list = fsIndex.getSortedList('services');
 
-                var lifecycles = {
-                    1: "Plan",
-                    2: "Phase In",
-                    3: "Active",
-                    4: "Phase Out",
-                    5: "End of Life"
-                };
-
-                var lifecycleArray = [];
-                for (var key in lifecycles) {
-                    lifecycleArray.push(lifecycles[key]);
-                }
-
-                function formattedDate(date) {
-                    var d = new Date(date || Date.now()),
-                        month = '' + (d.getMonth() + 1),
-                        day = '' + d.getDate(),
-                        year = d.getFullYear();
-
-                    if (month.length < 2) month = '0' + month;
-                    if (day.length < 2) day = '0' + day;
-
-                    return [month, day, year].join('/');
-                }
-
-                var getCurrentLifecycle = function (item) {
-                    item.factSheetHasLifecycles = item.factSheetHasLifecycles.sort(function (a, b) {
-                        return a.lifecycleStateID > b.lifecycleStateID;
-                    });
-
-                    var current = null;
-
-                    for (var i = 0; i < item.factSheetHasLifecycles.length; i++) {
-                        var curDate = Date.parse(item.factSheetHasLifecycles[i].startDate);
-                        if (curDate <= Date.now()) {
-                            current = {
-                                phase: lifecycles[item.factSheetHasLifecycles[i].lifecycleStateID],
-                                startDate: formattedDate(curDate)
-                            };
-                        }
-                    }
-
-                    return current;
-                };
+                var reportUtils = new ReportUtils();
+              
 
                 var getTagFromGroup = function (object, validTags) {
                     var cc = object.tags.filter(function (x) {
@@ -118,10 +73,11 @@ var ReportApplicationLifecycle = (function () {
                 var projectTypes = tagGroups['Project Type'];
                 var costCentres = tagGroups['Cost Centre'];
                 var appTypes = tagGroups['Application Type'];
+                var lifecycleArray = reportUtils.lifecycleArray();
                 for (var i = 0; i < list.length; i++) {
                     if (!that.tagFilter || list[i].tags.indexOf(that.tagFilter) != -1) {
 
-                        var currentLifecycle = getCurrentLifecycle(list[i]);
+                        var currentLifecycle = reportUtils.getCurrentLifecycle(list[i]);
 
                         // Extract market
                         var re = /^([A-Z]{2,3})_/;
@@ -144,7 +100,7 @@ var ReportApplicationLifecycle = (function () {
                             if (tmp) {
                                 if (tmp.projectID && fsIndex.index.projects[tmp.projectID]) {
 
-                                    var projectType = getTagFromGroup(fsIndex.index.projects[tmp.projectID], ['Transformation', 'Legacy'])
+                                    var projectType = getTagFromGroup(fsIndex.index.projects[tmp.projectID], projectTypes)
 
                                     output.push({
                                         name: list[i].fullName,
@@ -207,8 +163,8 @@ var ReportApplicationLifecycle = (function () {
                             <TableHeaderColumn dataField="lifecyclePhase" width="100" dataAlign="left" dataSort={true} filter={{ type: "SelectFilter", options: getLookup(lifecycleArray) }}>Phase</TableHeaderColumn>
                             <TableHeaderColumn dataField="lifecycleStart" width="100" dataAlign="left" dataSort={true} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>Phase Start</TableHeaderColumn>
                             <TableHeaderColumn dataField="projectName" dataAlign="left" dataSort={true} dataFormat={linkProject} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>Project Name</TableHeaderColumn>
-                            <TableHeaderColumn dataField="projectEffect" width="100" dataAlign="left" dataSort={true} filter={{ type: "SelectFilter", options: projectEffects }}>Project Effect</TableHeaderColumn>
-                            <TableHeaderColumn dataField="projectType" width="100" dataAlign="left" dataSort={true} filter={{ type: "SelectFilter", options: projectTypes }}>Project Type</TableHeaderColumn>
+                            <TableHeaderColumn dataField="projectEffect" width="100" dataAlign="left" dataSort={true} filter={{ type: "SelectFilter", options: getLookup(projectEffects) }}>Project Effect</TableHeaderColumn>
+                            <TableHeaderColumn dataField="projectType" width="100" dataAlign="left" dataSort={true} filter={{ type: "SelectFilter", options: getLookup(projectTypes) }}>Project Type</TableHeaderColumn>
                         </BootstrapTable>
                     </div>,
                     document.getElementById("app")

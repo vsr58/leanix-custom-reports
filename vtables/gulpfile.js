@@ -44,12 +44,9 @@ gulp.task('dist', ['copy', 'dist_css', 'dist_fonts'], function() {
       './node_modules/react-bootstrap-table/dist/react-bootstrap-table.js',
       './node_modules/lodash/index.js',
       './src/js/ReportSetup.js',
+      './src/js/ReportUtils.js',
       './src/js/FactSheetIndex.js',
-      './src/js/ReportCapabilitySpend.js',
-      './src/js/ReportProcessSpend.js',
-      './src/js/ReportHierarchy.js',
       './src/js/ReportDataQuality.js',
-      './src/js/ReportDataQualityServices.js',
       './src/js/ReportApplicationLifecycle.js',
       './src/js/ReportApplicationPortfolio.js',
       './src/js/App.js'
