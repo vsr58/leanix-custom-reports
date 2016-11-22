@@ -9,6 +9,9 @@
             break;
         case 'app-portfolio':
             var report = new ReportApplicationPortfolio(reportSetup, 'Application');
+            break;
+        case 'csm-operations':
+            var report = new ReportCSMOperations(reportSetup, 'CSM');
             break;    
         case 'data-quality':
             var report = new ReportDataQuality(reportSetup, 'Application');
