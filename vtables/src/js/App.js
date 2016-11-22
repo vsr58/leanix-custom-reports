@@ -10,15 +10,12 @@
         case 'app-portfolio':
             var report = new ReportApplicationPortfolio(reportSetup, 'Application');
             break;    
-    
-    
-        case 'test':
-            break;
-
         case 'data-quality':
             var report = new ReportDataQuality(reportSetup, 'Application');
             break;
-
+    
+        case 'test':
+            break;
 
 
         case 'vf1':

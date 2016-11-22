@@ -45,53 +45,8 @@ var ReportApplicationPortfolio = (function () {
             .then(function (tagGroups, data) {
 
                 var fsIndex = new FactSheetIndex(data);
-
                 var list = fsIndex.getSortedList('services');
-
-                var lifecycles = {
-                    1: "Plan",
-                    2: "Phase In",
-                    3: "Active",
-                    4: "Phase Out",
-                    5: "End of Life"
-                };
-
-                var lifecycleArray = [];
-                for (var key in lifecycles) {
-                    lifecycleArray.push(lifecycles[key]);
-                }
-
-                function formattedDate(date) {
-                    var d = new Date(date || Date.now()),
-                        month = '' + (d.getMonth() + 1),
-                        day = '' + d.getDate(),
-                        year = d.getFullYear();
-
-                    if (month.length < 2) month = '0' + month;
-                    if (day.length < 2) day = '0' + day;
-
-                    return [month, day, year].join('/');
-                }
-
-                var getCurrentLifecycle = function (item) {
-                    item.factSheetHasLifecycles = item.factSheetHasLifecycles.sort(function (a, b) {
-                        return a.lifecycleStateID > b.lifecycleStateID;
-                    });
-
-                    var current = null;
-
-                    for (var i = 0; i < item.factSheetHasLifecycles.length; i++) {
-                        var curDate = Date.parse(item.factSheetHasLifecycles[i].startDate);
-                        if (curDate <= Date.now()) {
-                            current = {
-                                phase: lifecycles[item.factSheetHasLifecycles[i].lifecycleStateID],
-                                startDate: formattedDate(curDate)
-                            };
-                        }
-                    }
-
-                    return current;
-                };
+                var reportUtils = new ReportUtils();
 
                 var getTagFromGroup = function (object, validTags) {
                     var cc = object.tags.filter(function (x) {
@@ -161,20 +116,11 @@ var ReportApplicationPortfolio = (function () {
                 for (var key in businessCriticality) {
                     businessCriticalityOptions.push(businessCriticality[key]);
                 }
-
-
+                var lifecycleArray = reportUtils.lifecycleArray();
+   
 
                 for (var i = 0; i < list.length; i++) {
                     if (!that.tagFilter || list[i].tags.indexOf(that.tagFilter) != -1) {
-
-                        var currentLifecycle = getCurrentLifecycle(list[i]);
-
-
-
-                        var lifecycleArray = [];
-                        for (var key in lifecycles) {
-                            lifecycleArray.push(lifecycles[key]);
-                        }
 
                         // Extract market
                         var re = /^([A-Z]{2,3})_/;
@@ -232,7 +178,7 @@ var ReportApplicationPortfolio = (function () {
                                 }
                             }
                         }
-
+                        var currentLifecycle = reportUtils.getCurrentLifecycle(list[i]);
 
                         output.push({
                             name: list[i].fullName,
@@ -240,8 +186,9 @@ var ReportApplicationPortfolio = (function () {
                             cobraId: cobras.length ? cobras[0].id : '',
                             cobraName: cobras.length ? cobras[0].name : '',
                             id: list[i].ID,
-                            costCentre: getTagFromGroup(list[i], costCentres),
+                            lifecyclePhase: currentLifecycle ? currentLifecycle.phase : '',
                             market: market,
+                            costCentre: getTagFromGroup(list[i], costCentres),
                             admScope: getTagFromGroup(list[i], 'AD&M Scope') ? 'Yes' : 'No',
                             cotsPackage: getTagFromGroup(list[i], 'COTS Package') ? 'Yes' : 'No',
                             resourceId: resources.length ? resources[0].id : '',
