@@ -49895,6 +49895,15 @@ ReportUtils.prototype.getTagFromGroup = function (object, validTags) {
     return '';
 };
 
+ReportUtils.prototype.getLookup = function (data) {
+    var ret = {};
+    for (var i = 0; i < data.length; i++) {
+        ret[data[i]] = data[i];
+    }
+
+    return ret;
+};
+
 
 
 /**
@@ -50740,6 +50749,287 @@ var ReportApplicationPortfolio = (function () {
 
     return ReportApplicationPortfolio;
 })();
+var ReportCSMOperations = (function () {
+    function ReportCSMOperations(reportSetup, tagFilter, title) {
+        this.reportSetup = reportSetup;
+        this.tagFilter = tagFilter;
+        this.title = title;
+    }
+
+    ReportCSMOperations.prototype.render = function () {
+        var that = this;
+
+        var tagGroupPromise = $.get(this.reportSetup.apiBaseUrl + '/tagGroups')
+            .then(function (response) {
+                var tagGroups = {};
+                for (var i = 0; i < response.length; i++) {
+                    tagGroups[response[i]['name']] = [];
+                    for (var j = 0; j < response[i]['tags'].length; j++) {
+                        tagGroups[response[i]['name']].push(response[i]['tags'][j]['name']);
+                    }
+                }
+                return tagGroups;
+            });
+
+        var factSheetPromise = $.get(this.reportSetup.apiBaseUrl + '/factsheets?relations=true'
+            + '&types[]=10&types[]=18&pageSize=-1'
+            + '&filterAttributes[]=ID'
+            + '&filterAttributes[]=description'
+            + '&filterAttributes[]=displayName'
+            + '&filterAttributes[]=fullName'
+            + '&filterAttributes[]=level'
+            + '&filterAttributes[]=parentID'
+            + '&filterAttributes[]=resourceType'
+            + '&filterAttributes[]=tags'
+            + '&filterRelations[]=factSheetHasRequires'
+        )
+            .then(function (response) {
+                return response.data;
+            });
+
+
+        $.when(tagGroupPromise, factSheetPromise)
+            .then(function (tagGroups, data) {
+
+                var fsIndex = new FactSheetIndex(data);
+                var list = fsIndex.getSortedList('services');
+                var reportUtils = new ReportUtils();
+
+                var statusOptions = tagGroups['Service Operation Status'];
+
+                var output = [];
+                for (var i = 0; i < list.length; i++) {
+                    if (list[i].level > 2)
+                        continue;
+
+                    if (!that.tagFilter || list[i].tags.indexOf(that.tagFilter) != -1) {
+
+                        var hierarchy = {};
+                        for (var z = 0; z < that.maxLevel; z++) {
+                            hierarchy['L' + z] = null;
+                        }
+
+                        var tmp = list[i];
+
+                        while (tmp != null) {
+                            hierarchy['L' + tmp.level] = tmp;
+                            tmp = fsIndex.getParent('services', tmp.ID);
+                        }
+
+                        var platform;
+                        for (var j = 0; j < list[i].factSheetHasRequires.length; j++) {
+                            var factSheetHasRequires = list[i].factSheetHasRequires[j];
+                            var bc = fsIndex.index.businessCapabilities[factSheetHasRequires.factSheetRefID];
+                            if (bc && bc.tags.indexOf('Platform') != -1) {
+                                platform = bc;
+                                break;
+                            }
+                        }
+
+                        output.push({
+                            name: list[i].fullName,
+                            level: list[i].level + 1,
+                            id: list[i].ID,
+                            description: list[i].description,
+                            hierarchy: hierarchy,
+                            hierarchyL0Name: hierarchy.L0 ? hierarchy.L0.fullName : '',
+                            hierarchyL1Name: hierarchy.L1 ? hierarchy.L1.fullName : '',
+                            hierarchyL2Name: hierarchy.L2 ? hierarchy.L2.fullName : '',
+                            status: reportUtils.getTagFromGroup(list[i], statusOptions),
+                            platformID: platform ? platform.ID : '',
+                            platformName: platform ? platform.fullName : ''
+
+                        });
+                    }
+                }
+
+                function linkL0(cell, row) {
+                    if (row.hierarchy.L0)
+                        return '<a href="' + that.reportSetup.baseUrl + '/services/' + row.hierarchy.L0.ID + '" target="_blank">' + cell + '</a>';
+                }
+
+                function linkL1(cell, row) {
+                    if (row.hierarchy.L1)
+                        return '<a href="' + that.reportSetup.baseUrl + '/services/' + row.hierarchy.L1.ID + '" target="_blank">' + cell + '</a>';
+                }
+
+                function linkL2(cell, row) {
+                    if (row.hierarchy.L2)
+                        return '<a href="' + that.reportSetup.baseUrl + '/services/' + row.hierarchy.L2.ID + '" target="_blank">' + cell + '</a>';
+                }
+
+                function linkPlatform(cell, row) {
+                    if (row.platformID)
+                        return '<a href="' + that.reportSetup.baseUrl + '/businessCapabilities/' + row.platformID + '" target="_blank">' + cell + '</a>';
+                }
+
+                function trClassFormat(rowData, rIndex) {
+                    return 'tr-level-' + rowData.level;
+                }
+
+                var levels = [];
+
+                for (var z = 0; z < that.maxLevel; z++) {
+                    levels.push(z + 1);
+                }
+
+                ReactDOM.render(
+                    React.createElement("div", {className: "report-hierarchy"}, 
+                        React.createElement(BootstrapTable, {data: output, striped: false, hover: false, search: true, exportCSV: true, trClassName: trClassFormat}, 
+                            React.createElement(TableHeaderColumn, {dataField: "id", isKey: true, hidden: true}, "ID"), 
+                            React.createElement(TableHeaderColumn, {dataField: "level", width: "150", dataAlign: "left", filter: { type: "NumberFilter", options: levels, numberComparators: ['<='], defaultValue: { comparator: '<=' }}}, "Level"), 
+                            React.createElement(TableHeaderColumn, {dataField: "hierarchyL0Name", width: "200", dataAlign: "left", dataFormat: linkL0, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "Service Domain"), 
+                            React.createElement(TableHeaderColumn, {dataField: "hierarchyL1Name", width: "200", dataAlign: "left", dataFormat: linkL1, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "Service Name"), 
+                            React.createElement(TableHeaderColumn, {dataField: "hierarchyL2Name", width: "200", dataAlign: "left", dataFormat: linkL2, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "Service Operation"), 
+                            React.createElement(TableHeaderColumn, {dataField: "description", width: "200", dataAlign: "left", dataFormat: linkL2, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "Service Operation Description"), 
+                            React.createElement(TableHeaderColumn, {dataField: "status", width: "200", dataAlign: "left", filter: { type: "SelectFilter", options: reportUtils.getLookup(statusOptions)}}, "Service Operation Status"), 
+                            React.createElement(TableHeaderColumn, {dataField: "platformName", width: "200", dataAlign: "left", dataFormat: linkPlatform, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "Platform")
+                        )
+                    ),
+                    document.getElementById("app")
+                );
+            });
+    };
+
+    return ReportCSMOperations;
+})();
+var ReportCIMMasterList = (function () {
+    function ReportCIMMasterList(reportSetup, tagFilter, title) {
+        this.reportSetup = reportSetup;
+        this.tagFilter = tagFilter;
+        this.title = title;
+    }
+
+    ReportCIMMasterList.prototype.render = function () {
+        var that = this;
+
+        var tagGroupPromise = $.get(this.reportSetup.apiBaseUrl + '/tagGroups')
+            .then(function (response) {
+                var tagGroups = {};
+                for (var i = 0; i < response.length; i++) {
+                    tagGroups[response[i]['name']] = [];
+                    for (var j = 0; j < response[i]['tags'].length; j++) {
+                        tagGroups[response[i]['name']].push(response[i]['tags'][j]['name']);
+                    }
+                }
+                return tagGroups;
+            });
+
+        var factSheetPromise = $.get(this.reportSetup.apiBaseUrl + '/factsheets?relations=true'
+            + '&types[]=17&types[]=18&pageSize=-1'
+            + '&filterAttributes[]=ID'
+            + '&filterAttributes[]=description'
+            + '&filterAttributes[]=displayName'
+            + '&filterAttributes[]=fullName'
+            + '&filterAttributes[]=level'
+            + '&filterAttributes[]=parentID'
+            + '&filterAttributes[]=resourceType'
+            + '&filterAttributes[]=tags'
+            + '&filterRelations[]=factSheetHasRequiredby'
+        )
+            .then(function (response) {
+                return response.data;
+            });
+
+
+        $.when(tagGroupPromise, factSheetPromise)
+            .then(function (tagGroups, data) {
+
+                var fsIndex = new FactSheetIndex(data);
+                var list = fsIndex.getSortedList('businessObjects');
+                var reportUtils = new ReportUtils();
+
+                var statusOptions = tagGroups['Service Operation Status'];
+
+                var output = [];
+                for (var i = 0; i < list.length; i++) {
+                    if (list[i].level != 1)
+                        continue;
+
+                    if (!that.tagFilter || list[i].tags.indexOf(that.tagFilter) != -1) {
+
+                        var hierarchy = {};
+                        for (var z = 0; z < that.maxLevel; z++) {
+                            hierarchy['L' + z] = null;
+                        }
+
+                        var tmp = list[i];
+
+                        while (tmp != null) {
+                            hierarchy['L' + tmp.level] = tmp;
+                            tmp = fsIndex.getParent('businessObjects', tmp.ID);
+                        }
+
+                        var appMap;
+                        for (var j = 0; j < list[i].factSheetHasRequiredby.length; j++) {
+                            var factSheetHasRequiredBy = list[i].factSheetHasRequiredby[j];
+                            var bc = fsIndex.index.businessCapabilities[factSheetHasRequiredBy.factSheetID];
+                            if (bc && bc.tags.indexOf('AppMap') != -1) {
+                                appMap = bc;
+                                break;
+                            }
+                        }
+
+                        output.push({
+                            name: list[i].fullName,
+                            level: list[i].level + 1,
+                            id: list[i].ID,
+                            hierarchy: hierarchy,
+                            hierarchyL0Name: hierarchy.L0 ? hierarchy.L0.fullName : '',
+                            hierarchyL0Description: hierarchy.L0 ? hierarchy.L0.description : '',
+                            hierarchyL1Name: hierarchy.L1 ? hierarchy.L1.fullName : '',
+                            hierarchyL1Description: hierarchy.L1 ? hierarchy.L1.description : '',
+                            landscapeAvailable: (list[i].tags.indexOf('Landscape Available') != -1) ? 'Yes' : 'No',
+                            appMapID: appMap ? appMap.ID : '',
+                            appMapName: appMap ? appMap.displayName : ''
+                        });
+                    }
+                }
+
+                function linkL0(cell, row) {
+                    if (row.hierarchy.L0)
+                        return '<a href="' + that.reportSetup.baseUrl + '/businessObjects/' + row.hierarchy.L0.ID + '" target="_blank">' + cell + '</a>';
+                }
+
+                function linkL1(cell, row) {
+                    if (row.hierarchy.L1)
+                        return '<a href="' + that.reportSetup.baseUrl + '/businessObjects/' + row.hierarchy.L1.ID + '" target="_blank">' + cell + '</a>';
+                }
+
+                function linkAppMap(cell, row) {
+                    if (row.appMapID)
+                        return '<a href="' + that.reportSetup.baseUrl + '/businessCapabilities/' + row.appMapID + '" target="_blank">' + cell + '</a>';
+                }
+
+                function trClassFormat(rowData, rIndex) {
+                    return 'tr-level-' + rowData.level;
+                }
+
+                var levels = [];
+
+                for (var z = 0; z < that.maxLevel; z++) {
+                    levels.push(z + 1);
+                }
+
+                ReactDOM.render(
+                    React.createElement("div", {className: "report-hierarchy"}, 
+                        React.createElement(BootstrapTable, {data: output, striped: false, hover: false, search: true, exportCSV: true, trClassName: trClassFormat}, 
+                            React.createElement(TableHeaderColumn, {dataField: "id", isKey: true, hidden: true}, "ID"), 
+                            React.createElement(TableHeaderColumn, {dataField: "hierarchyL0Name", width: "200", dataAlign: "left", dataFormat: linkL0, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "Entity Domain"), 
+                            React.createElement(TableHeaderColumn, {dataField: "hierarchyL0Description", width: "200", dataAlign: "left", filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "Entity Domain Description"), 
+                            React.createElement(TableHeaderColumn, {dataField: "hierarchyL1Name", width: "200", dataAlign: "left", dataFormat: linkL1, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "Entity Name"), 
+                            React.createElement(TableHeaderColumn, {dataField: "hierarchyL1Description", width: "200", dataAlign: "left", filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "Entity Name Description"), 
+                            React.createElement(TableHeaderColumn, {dataField: "landscapeAvailable", width: "200", dataAlign: "left", filter: { type: "SelectFilter", options: reportUtils.getLookup(['Yes', 'No'])}}, "Landscape Available?"), 
+                            React.createElement(TableHeaderColumn, {dataField: "appMapName", width: "200", dataAlign: "left", dataFormat: linkAppMap, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "Mapping to Application Map")
+                        )
+                    ),
+                    document.getElementById("app")
+                );
+            });
+    };
+
+    return ReportCIMMasterList;
+})();
 (function () {
     'use strict';
 
@@ -50751,51 +51041,16 @@ var ReportApplicationPortfolio = (function () {
             break;
         case 'app-portfolio':
             var report = new ReportApplicationPortfolio(reportSetup, 'Application');
+            break;
+        case 'cim-masterlist':
+            var report = new ReportCIMMasterList(reportSetup);
+            break;
+        case 'csm-operations':
+            var report = new ReportCSMOperations(reportSetup, 'CSM');
             break;    
         case 'data-quality':
             var report = new ReportDataQuality(reportSetup, 'Application');
             break;
-    
-        case 'test':
-            break;
-
-
-        case 'vf1':
-            var report = new ReportApplicationLifecycle(reportSetup, 'Application');
-            break;
-        case 'vf2':
-            var report = new ReportApplicationPortfolio(reportSetup, 'Application');
-            break;
-        case 'vf3':
-            var report = new ReportDataQuality(reportSetup);
-            break;
-        case 'app-portfolio':
-            var report = new ReportApplicationPortfolio(reportSetup);
-            break;
-        case 'process-spend':
-            var report = new ReportProcessSpend(reportSetup);
-            break;
-        case 'capability-definitions':
-            var report = new ReportHierarchy(reportSetup);
-            break;
-        case 'capability-definitions-cobra':
-            var report = new ReportHierarchy(reportSetup, 'COBRA');
-            break;
-        case 'capability-definitions-bca':
-            var report = new ReportHierarchy(reportSetup, 'BCA');
-            break;
-        case 'capability-spend-cobra':
-            var report = new ReportCapabilitySpend(reportSetup, 'COBRA');
-            break;
-        case 'capability-spend-bca':
-            var report = new ReportCapabilitySpend(reportSetup, 'BCA');
-            break;
-        case 'data-quality-services':
-            var report = new ReportDataQualityServices(reportSetup);
-            break;
-        case 'capability-spend':
-        default:
-            var report = new ReportCapabilitySpend(reportSetup);
     }
 
     if (report)
