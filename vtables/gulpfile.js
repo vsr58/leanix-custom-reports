@@ -50,6 +50,7 @@ gulp.task('dist', ['copy', 'dist_css', 'dist_fonts'], function() {
       './src/js/ReportApplicationLifecycle.js',
       './src/js/ReportApplicationPortfolio.js',
       './src/js/ReportCSMOperations.js',
+      './src/js/ReportCIMMasterList.js',
       './src/js/App.js'
     ])
     .pipe(react())
