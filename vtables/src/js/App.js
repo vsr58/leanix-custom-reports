@@ -16,6 +16,9 @@
         case 'csm-operations':
             var report = new ReportCSMOperations(reportSetup, 'CSM');
             break;    
+        case 'csm-services':
+            var report = new ReportCSMServices(reportSetup, 'CSM');
+            break;    
         case 'data-quality':
             var report = new ReportDataQuality(reportSetup, 'Application');
             break;
