@@ -49865,7 +49865,8 @@ ReportUtils.prototype.getCurrentLifecycle = function (item) {
             current = {
                 phase: this.lifecycles[item.factSheetHasLifecycles[i].lifecycleStateID],
                 phaseID: item.factSheetHasLifecycles[i].lifecycleStateID,
-                startDate: this.formattedDate(curDate)
+                startDate: this.formattedDate(curDate),
+                date: curDate
             };
         }
     }
@@ -49873,12 +49874,19 @@ ReportUtils.prototype.getCurrentLifecycle = function (item) {
 };
 
 ReportUtils.prototype.getLifecycle = function (item, stateID) {
-
-    return {
-        phase: this.lifecycles[stateID],
-        phaseID: item.factSheetHasLifecycles[i].stateID,
-        startDate: this.formattedDate(curDate)
+    var current;
+    for (var i = 0; i < item.factSheetHasLifecycles.length; i++) {
+        if (item.factSheetHasLifecycles[i].lifecycleStateID == stateID) { 
+            var curDate = Date.parse(item.factSheetHasLifecycles[i].startDate);
+            current = {
+                phase: this.lifecycles[item.factSheetHasLifecycles[i].lifecycleStateID],
+                phaseID: item.factSheetHasLifecycles[i].lifecycleStateID,
+                startDate: this.formattedDate(curDate),
+                date: curDate
+            };
+        }
     }
+    return current;
 };
 
 ReportUtils.prototype.getTagFromGroup = function (object, validTags) {
@@ -49952,17 +49960,17 @@ var FactSheetIndex = (function() {
 
     return FactSheetIndex;
 })();
-var ReportDataQuality = (function () {
+var ReportDataQuality = (function() {
     function ReportDataQuality(reportSetup, tagFilter) {
         this.reportSetup = reportSetup;
         this.tagFilter = tagFilter;
     }
 
-    ReportDataQuality.prototype.render = function () {
+    ReportDataQuality.prototype.render = function() {
         var that = this;
 
         var tagGroupPromise = $.get(this.reportSetup.apiBaseUrl + '/tagGroups')
-            .then(function (response) {
+            .then(function(response) {
                 var tagGroups = {};
                 for (var i = 0; i < response.length; i++) {
                     tagGroups[response[i]['name']] = [];
@@ -49982,7 +49990,7 @@ var ReportDataQuality = (function () {
             });
 
         var rolePromise = $.get(this.reportSetup.apiBaseUrl + '/userRoleDetails')
-            .then(function (response) {
+            .then(function(response) {
                 var roleIDs = {};
                 for (var i = 0; i < response.length; i++) {
                     roleIDs[response[i]['name']] = response[i]['ID'];
@@ -50006,12 +50014,12 @@ var ReportDataQuality = (function () {
             + '&filterAttributes[]=tags'
 
             + '&pageSize=-1')
-            .then(function (response) {
+            .then(function(response) {
                 return response.data;
             });
 
         $.when(tagGroupPromise, rolePromise, factSheetPromise)
-            .then(function (tagGroupData, roleIDs, data) {
+            .then(function(tagGroupData, roleIDs, data) {
 
                 var fsIndex = new FactSheetIndex(data);
                 var list = fsIndex.getSortedList('services');
@@ -50019,7 +50027,7 @@ var ReportDataQuality = (function () {
                 var tagIDs = tagGroupData.ids;
                 var tagGroups = tagGroupData.groups;
 
-                var getLookup = function (data) {
+                var getLookup = function(data) {
                     var ret = {};
                     for (var i = 0; i < data.length; i++) {
                         ret[data[i]] = data[i];
@@ -50070,12 +50078,11 @@ var ReportDataQuality = (function () {
                     for (var i = 0; i < groupedByMarket[key].length; i++) {
                         var service = groupedByMarket[key][i];
                         var hasActiveLifecycle = false;
-                        for (var j = 0; j < service.factSheetHasLifecycles.length; j++) {
-                            if (service.factSheetHasLifecycles[j].lifecycleStateID == 3) {
-                                hasActiveLifecycle = true;
-                                break;
-                            }
-                        }
+
+                        var current = reportUtils.getCurrentLifecycle(service);
+                        if (current && current.phaseID > 1 && current.phaseID < 4) {
+                            hasActiveLifecycle = true;
+                        } 
                         if (hasActiveLifecycle) {
                             var c = false;
                             for (var j = 0; j < service.serviceHasProjects.length; j++) {
@@ -50092,7 +50099,7 @@ var ReportDataQuality = (function () {
                         }
                     }
                     pushToOutput(output, key, rule, compliant, noncompliant,
-                        'type=10&serviceHasConsumers[]=' + key + '&lifecycle[]=3&lifecycle_data=1995-01-01_to_2022-11-01&serviceHasProjects[]=na'
+                        'type=10&serviceHasConsumers[]=' + key + '&lifecycle[]=2&lifecycle[]=3&serviceHasProjects[]=na'
                     );
 
                     rule = 'Retiring applications';
@@ -50254,6 +50261,18 @@ var ReportDataQuality = (function () {
                     pushToOutput(output, key, rule, compliant, noncompliant,
                         'type=10&lifecycle[]=3&lifecycle_data=today&serviceHasConsumers[]=' + key + '&tags_customization_level[]=na');
 
+                    rule = 'Overall Quality';
+                    compliant[rule] = 0;
+                    noncompliant[rule] = 0;
+                    for (var c in compliant) {
+                        if (c != rule) compliant[rule] += compliant[c];
+                    }
+                    for (var n in noncompliant) {
+                        if (n != rule) noncompliant[rule] += noncompliant[n];
+                    }
+                    pushToOutput(output, key, rule, compliant, noncompliant);
+
+                    break;
                 }
 
                 function pushToOutput(output, key, rule, compliant, noncompliant, url) {
@@ -50279,11 +50298,15 @@ var ReportDataQuality = (function () {
                     return '<div class="percentage" style="background-color: ' + getGreenToRed(cell) + ';">' + cell + ' %</div>';
                 }
 
+                function enumFormatter(cell, row, enumObject) {
+                    return enumObject[cell];
+                }
+
                 ReactDOM.render(
                     React.createElement("div", {className: "report-data-quality"}, 
                         React.createElement(BootstrapTable, {data: output, striped: false, hover: true, search: true, condensed: true, exportCSV: true}, 
                             React.createElement(TableHeaderColumn, {dataField: "id", isKey: true, hidden: true}, "ID"), 
-                            React.createElement(TableHeaderColumn, {dataField: "market", width: "80", dataAlign: "left", dataSort: false, filter: { type: "SelectFilter", options: markets}}, "Market"), 
+                            React.createElement(TableHeaderColumn, {dataField: "market", width: "80", dataAlign: "left", dataSort: false, filterFormatted: true, dataFormat: enumFormatter, formatExtraData: markets, filter: { type: "SelectFilter", options: markets}}, "Market"), 
                             React.createElement(TableHeaderColumn, {dataField: "rule", dataAlign: "left", dataSort: true, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "Rule"), 
                             React.createElement(TableHeaderColumn, {dataField: "compliant", dataAlign: "left", dataSort: true, filter: { type: "NumberFilter", defaultValue: { comparator: '<=' }}}, "Compliant"), 
                             React.createElement(TableHeaderColumn, {dataField: "noncompliant", dataAlign: "left", dataSort: true, dataFormat: link, filter: { type: "NumberFilter", defaultValue: { comparator: '<=' }}}, "Non-Compliant"), 
@@ -50495,13 +50518,24 @@ var ReportApplicationPortfolio = (function () {
                 return tagGroups;
             });
 
+        var userPromise = $.get(this.reportSetup.apiBaseUrl + '/users')
+            .then(function (response) {
+                var users = {};
+                for (var i = 0; i < response.length; i++) {
+                    users[response[i]['ID']] = response[i]['email'];
+                }
+                return users;
+            });
+
 
         var factSheetPromise = $.get(this.reportSetup.apiBaseUrl +
             '/factsheets?relations=true&types[]=10&types[]=18&types[]=19' +
             '&filterRelations[]=serviceHasBusinessCapabilities' +
             '&filterRelations[]=factSheetHasLifecycles' +
             '&filterRelations[]=serviceHasResources' +
+            '&filterRelations[]=userSubscriptions' +
             '&filterAttributes[]=businessCriticalityID' +
+            '&filterAttributes[]=alias' +
             '&filterAttributes[]=description' +
             '&filterAttributes[]=displayName' +
             '&filterAttributes[]=fullName' +
@@ -50516,8 +50550,8 @@ var ReportApplicationPortfolio = (function () {
                 return response.data;
             });
 
-        $.when(tagGroupPromise, factSheetPromise)
-            .then(function (tagGroups, data) {
+        $.when(tagGroupPromise, userPromise, factSheetPromise)
+            .then(function (tagGroups, users, data) {
 
                 var fsIndex = new FactSheetIndex(data);
                 var list = fsIndex.getSortedList('services');
@@ -50558,7 +50592,8 @@ var ReportApplicationPortfolio = (function () {
                 var pciFlags = tagGroups['PCI Flag'];
                 var soxFlags = tagGroups['SOX Flag'];
                 var recommendations = tagGroups['Recommendation'];
-                
+                var lastUpgrades = tagGroups['Last Major Upgrade'];
+
                 var businessValue = {
                     4: "4-High",
                     3: "3-Med/High",
@@ -50582,17 +50617,17 @@ var ReportApplicationPortfolio = (function () {
                 }
 
                 var businessCriticality = {
-                    1: "4-High",
-                    2: "3-Med/High",
-                    3: "2-Low/Med",
-                    4: "1-Low"
+                    1: "Mission Critical",
+                    2: "Business Premium",
+                    3: "Business Standard",
+                    4: "Basic"
                 };
                 var businessCriticalityOptions = [];
                 for (var key in businessCriticality) {
                     businessCriticalityOptions.push(businessCriticality[key]);
                 }
                 var lifecycleArray = reportUtils.lifecycleArray();
-   
+
 
                 for (var i = 0; i < list.length; i++) {
                     if (!that.tagFilter || list[i].tags.indexOf(that.tagFilter) != -1) {
@@ -50654,6 +50689,27 @@ var ReportApplicationPortfolio = (function () {
                             }
                         }
                         var currentLifecycle = reportUtils.getCurrentLifecycle(list[i]);
+                        var golive = reportUtils.getLifecycle(list[i], 3);
+                        var retired = reportUtils.getLifecycle(list[i], 5);
+
+                        var itOwner = '';
+                        var businessOwner = '';
+                        var spoc = '';
+                        for (var j = 0; j < list[i].userSubscriptions.length; j++) {
+                            var subscription = list[i].userSubscriptions[j];
+                            for (var k = 0; k < subscription.roleDetails.length; k++) {
+                                if (subscription.roleDetails[k] == 'SPOC') {
+                                    spoc = subscription.userID;
+                                }
+                                if (subscription.roleDetails[k] == 'Business Owner') {
+                                    businessOwner = subscription.userID;
+                                }
+                                 if (subscription.roleDetails[k] == 'IT Owner') {
+                                    itOwner = subscription.userID;
+                                }
+                            }
+                        }
+
 
                         output.push({
                             name: list[i].fullName,
@@ -50662,6 +50718,8 @@ var ReportApplicationPortfolio = (function () {
                             cobraName: cobras.length ? cobras[0].name : '',
                             id: list[i].ID,
                             lifecyclePhase: currentLifecycle ? currentLifecycle.phase : '',
+                            golive: golive ? golive.startDate : '',
+                            retired: retired ? retired.startDate : '',
                             market: market,
                             costCentre: getTagFromGroup(list[i], costCentres),
                             admScope: getTagFromGroup(list[i], 'AD&M Scope') ? 'Yes' : 'No',
@@ -50672,6 +50730,8 @@ var ReportApplicationPortfolio = (function () {
                             remedyName: remedy.length ? remedy[0].name : '',
                             supportID: support.length ? support[0].id : '',
                             supportName: support.length ? support[0].name : '',
+                            lastUpgrade: getTagFromGroup(list[i], lastUpgrades),
+                            
 
                             customisation: getTagFromGroup(list[i], customisations),
                             businessValue: list[i].functionalSuitabilityID ? businessValue[list[i].functionalSuitabilityID] : '',
@@ -50679,11 +50739,15 @@ var ReportApplicationPortfolio = (function () {
                             complexity: getTagFromGroup(list[i], complexities),
                             businessCriticality: list[i].businessCriticalityID ? businessCriticality[list[i].businessCriticalityID] : '',
                             appType: getTagFromGroup(list[i], appTypes),
+                            alias: list[i].alias,
                             pciFlag: getTagFromGroup(list[i], pciFlags),
                             soxFlag: getTagFromGroup(list[i], soxFlags),
+                            itOwner: itOwner ? users[itOwner] : '',
+                            businessOwner: businessOwner ? users[businessOwner] : '',
+                            spoc: spoc ? users[spoc] : '',
                             recommendation: getTagFromGroup(list[i], recommendations),
-                            
-                             });
+
+                        });
 
 
                     }
@@ -50722,11 +50786,20 @@ var ReportApplicationPortfolio = (function () {
                             React.createElement(TableHeaderColumn, {dataField: "description", width: "150", dataAlign: "left", dataSort: true, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "Description"), 
                             React.createElement(TableHeaderColumn, {dataField: "cobraName", width: "150", dataAlign: "left", dataSort: true, dataFormat: linkBC, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "COBRA"), 
                             React.createElement(TableHeaderColumn, {dataField: "lifecyclePhase", width: "100", dataAlign: "left", dataSort: true, filter: { type: "SelectFilter", options: getLookup(lifecycleArray)}}, "Phase"), 
+                            React.createElement(TableHeaderColumn, {dataField: "golive", width: "150", dataAlign: "left", dataSort: true, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "Go Live Date"), 
+                            React.createElement(TableHeaderColumn, {dataField: "retired", width: "150", dataAlign: "left", dataSort: true, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "Retired Date"), 
+                            React.createElement(TableHeaderColumn, {dataField: "recommendation", width: "100", dataAlign: "left", dataSort: true, filter: { type: "SelectFilter", options: getLookup(recommendations)}}, "Recommendation"), 
                             React.createElement(TableHeaderColumn, {dataField: "market", width: "80", dataAlign: "left", dataSort: true, filter: { type: "SelectFilter", options: markets}}, "Market"), 
                             React.createElement(TableHeaderColumn, {dataField: "costCentre", width: "120", dataAlign: "left", dataSort: true, filter: { type: "SelectFilter", options: getLookup(costCentres)}}, "Cost Centre"), 
                             React.createElement(TableHeaderColumn, {dataField: "admScope", width: "120", dataAlign: "left", dataSort: true, filter: { type: "SelectFilter", options: getLookup(['Yes', 'No'])}}, "In AD&M Scope"), 
                             React.createElement(TableHeaderColumn, {dataField: "cotsPackage", width: "120", dataAlign: "left", dataSort: true, filter: { type: "SelectFilter", options: getLookup(['Yes', 'No'])}}, "COTS Package"), 
+                            React.createElement(TableHeaderColumn, {dataField: "lastUpgrade", width: "150", dataAlign: "left", dataSort: true, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "Last Major Upgrade Date"), 
+                         
+                           
+                           
                             React.createElement(TableHeaderColumn, {dataField: "resourceName", width: "150", dataAlign: "left", dataSort: true, dataFormat: linkResource, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "COTS Software"), 
+                           
+                           
                             React.createElement(TableHeaderColumn, {dataField: "remedyName", width: "150", dataAlign: "left", dataSort: true, dataFormat: linkRemedy, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "Remedy Business Service"), 
                             React.createElement(TableHeaderColumn, {dataField: "supportName", width: "150", dataAlign: "left", dataSort: true, dataFormat: linkSupport, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "Supported By"), 
                             React.createElement(TableHeaderColumn, {dataField: "customisation", width: "120", dataAlign: "left", dataSort: true, filter: { type: "SelectFilter", options: getLookup(customisations)}}, "Level of Customisation"), 
@@ -50734,11 +50807,16 @@ var ReportApplicationPortfolio = (function () {
                             React.createElement(TableHeaderColumn, {dataField: "technicalCondition", width: "120", dataAlign: "left", dataSort: true, filter: { type: "SelectFilter", options: getLookup(technicalConditionOptions)}}, "Technical Condition"), 
                             React.createElement(TableHeaderColumn, {dataField: "complexity", width: "120", dataAlign: "left", dataSort: true, filter: { type: "SelectFilter", options: getLookup(complexities)}}, "Application Complexity"), 
                             React.createElement(TableHeaderColumn, {dataField: "businessCriticality", width: "120", dataAlign: "left", dataSort: true, filter: { type: "SelectFilter", options: getLookup(businessCriticalityOptions)}}, "Business Criticality"), 
+                            React.createElement(TableHeaderColumn, {dataField: "alias", width: "100", dataAlign: "left", dataSort: true, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "Alternate names"), 
                             React.createElement(TableHeaderColumn, {dataField: "appType", width: "100", dataAlign: "left", dataSort: true, filter: { type: "SelectFilter", options: getLookup(appTypes)}}, "App Type"), 
                             React.createElement(TableHeaderColumn, {dataField: "soxFlag", width: "100", dataAlign: "left", dataSort: true, filter: { type: "SelectFilter", options: getLookup(soxFlags)}}, "SOX Flag"), 
                             React.createElement(TableHeaderColumn, {dataField: "pciFlag", width: "100", dataAlign: "left", dataSort: true, filter: { type: "SelectFilter", options: getLookup(pciFlags)}}, "PCI Flag"), 
-                            React.createElement(TableHeaderColumn, {dataField: "recommendation", width: "100", dataAlign: "left", dataSort: true, filter: { type: "SelectFilter", options: getLookup(recommendations)}}, "Recommendation")
-                        
+                            React.createElement(TableHeaderColumn, {dataField: "itOwner", width: "100", dataAlign: "left", dataSort: true, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "IT Owner"), 
+                            React.createElement(TableHeaderColumn, {dataField: "businessOwner", width: "100", dataAlign: "left", dataSort: true, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "Business Owner"), 
+                            React.createElement(TableHeaderColumn, {dataField: "spoc", width: "100", dataAlign: "left", dataSort: true, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "SPOC")
+
+
+                         
 
                         )
                     ),
@@ -50748,6 +50826,308 @@ var ReportApplicationPortfolio = (function () {
     };
 
     return ReportApplicationPortfolio;
+})();
+var ReportAppMap2BCA = (function () {
+    function ReportAppMap2BCA(reportSetup, tagFilter, title) {
+        this.reportSetup = reportSetup;
+        this.tagFilter = tagFilter;
+        this.title = title;
+    }
+
+    ReportAppMap2BCA.prototype.render = function () {
+        var that = this;
+
+        var factSheetPromise = $.get(this.reportSetup.apiBaseUrl + '/factsheets?relations=true'
+            + '&types[]=18&pageSize=-1'
+            + '&filterRelations[]=factSheetHasRequires'
+            + '&filterAttributes[]=displayName'
+            + '&filterAttributes[]=ID'
+            + '&filterAttributes[]=fullName'
+            + '&filterAttributes[]=resourceType'
+            + '&filterAttributes[]=tags'
+        )
+            .then(function (response) {
+                return response.data;
+            });
+
+
+
+        $.when(factSheetPromise)
+            .then(function (data) {
+                var fsIndex = new FactSheetIndex(data);
+                var list = fsIndex.getSortedList('businessCapabilities');
+
+                var output = [];
+                for (var i = 0; i < list.length; i++) {
+                    if (list[i].tags.indexOf('AppMap') != -1) {
+                        for (var z = 0; z < list[i].factSheetHasRequires.length; z++) {
+                            var factSheetHasRequires = list[i].factSheetHasRequires[z];
+                            if (factSheetHasRequires && factSheetHasRequires.factSheetRefID) {
+                                var refBC = fsIndex.index.businessCapabilities[factSheetHasRequires.factSheetRefID];
+                                if (refBC && refBC.tags.indexOf('BCA') != -1) {
+
+                                    output.push({
+                                        name: list[i].fullName,
+                                        id: list[i].ID,
+                                        refName: refBC.fullName,
+                                        refId: refBC.ID
+                                    });
+                                }
+                            }
+                        }    
+                    }
+                }
+
+
+                function link(cell, row) {
+                    return '<a href="' + that.reportSetup.baseUrl + '/businessCapabilities/' + row.id + '" target="_blank">' + cell + '</a>';
+                }
+
+                function linkRef(cell, row) {
+                    if (row.refId)
+                        return '<a href="' + that.reportSetup.baseUrl + '/businessCapabilities/' + row.refId + '" target="_blank">' + cell + '</a>';
+                }
+
+                ReactDOM.render(
+                    React.createElement("div", null, 
+                        React.createElement(BootstrapTable, {data: output, striped: true, hover: true, search: true, pagination: true, exportCSV: true}, 
+                            React.createElement(TableHeaderColumn, {dataField: "id", isKey: true, hidden: true}, "ID"), 
+                            React.createElement(TableHeaderColumn, {dataField: "name", dataAlign: "left", dataSort: true, dataFormat: link, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "Application Map"), 
+                            React.createElement(TableHeaderColumn, {dataField: "refName", dataAlign: "left", dataSort: true, dataFormat: linkRef, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "BCA")
+                         )
+                    ),
+                    document.getElementById("app")
+                );
+            });
+    };
+
+    return ReportAppMap2BCA;
+})();
+var ReportAppMap2CIM = (function () {
+    function ReportAppMap2CIM(reportSetup, tagFilter, title) {
+        this.reportSetup = reportSetup;
+        this.tagFilter = tagFilter;
+        this.title = title;
+    }
+
+    ReportAppMap2CIM.prototype.render = function () {
+        var that = this;
+
+        var factSheetPromise = $.get(this.reportSetup.apiBaseUrl + '/factsheets?relations=true'
+            + '&types[]=17&&types[]=18&pageSize=-1'
+            + '&filterRelations[]=factSheetHasRequires'
+            + '&filterAttributes[]=displayName'
+            + '&filterAttributes[]=ID'
+            + '&filterAttributes[]=fullName'
+            + '&filterAttributes[]=resourceType'
+            + '&filterAttributes[]=tags'
+        )
+            .then(function (response) {
+                return response.data;
+            });
+
+
+
+        $.when(factSheetPromise)
+            .then(function (data) {
+                var fsIndex = new FactSheetIndex(data);
+                var list = fsIndex.getSortedList('businessCapabilities');
+
+                var output = [];
+                for (var i = 0; i < list.length; i++) {
+                    if (list[i].tags.indexOf('AppMap') != -1) {
+                        for (var z = 0; z < list[i].factSheetHasRequires.length; z++) {
+                            var factSheetHasRequires = list[i].factSheetHasRequires[z];
+                            if (factSheetHasRequires && factSheetHasRequires.factSheetRefID) {
+                                var refBO = fsIndex.index.businessObjects[factSheetHasRequires.factSheetRefID];
+                                if (refBO) {
+
+                                    output.push({
+                                        name: list[i].fullName,
+                                        id: list[i].ID,
+                                        refName: refBO.fullName,
+                                        refId: refBO.ID
+                                    });
+                                }
+                            }
+                        }    
+                    }
+                }
+
+
+                function link(cell, row) {
+                    return '<a href="' + that.reportSetup.baseUrl + '/businessCapabilities/' + row.id + '" target="_blank">' + cell + '</a>';
+                }
+
+                function linkRef(cell, row) {
+                    if (row.refId)
+                        return '<a href="' + that.reportSetup.baseUrl + '/businessObjects/' + row.refId + '" target="_blank">' + cell + '</a>';
+                }
+
+                ReactDOM.render(
+                    React.createElement("div", null, 
+                        React.createElement(BootstrapTable, {data: output, striped: true, hover: true, search: true, pagination: true, exportCSV: true}, 
+                            React.createElement(TableHeaderColumn, {dataField: "id", isKey: true, hidden: true}, "ID"), 
+                            React.createElement(TableHeaderColumn, {dataField: "name", dataAlign: "left", dataSort: true, dataFormat: link, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "Application Map"), 
+                            React.createElement(TableHeaderColumn, {dataField: "refName", dataAlign: "left", dataSort: true, dataFormat: linkRef, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "CIM")
+                         )
+                    ),
+                    document.getElementById("app")
+                );
+            });
+    };
+
+    return ReportAppMap2CIM;
+})();
+var ReportAppMap2ETOM = (function () {
+    function ReportAppMap2ETOM(reportSetup, tagFilter, title) {
+        this.reportSetup = reportSetup;
+        this.tagFilter = tagFilter;
+        this.title = title;
+    }
+
+    ReportAppMap2ETOM.prototype.render = function () {
+        var that = this;
+
+        var factSheetPromise = $.get(this.reportSetup.apiBaseUrl + '/factsheets?relations=true'
+            + '&types[]=18&types[]=22&pageSize=-1'
+            + '&filterRelations[]=processHasBusinessCapabilities'
+            + '&filterAttributes[]=displayName'
+            + '&filterAttributes[]=ID'
+            + '&filterAttributes[]=fullName'
+            + '&filterAttributes[]=resourceType'
+            + '&filterAttributes[]=tags'
+        )
+            .then(function (response) {
+                return response.data;
+            });
+
+
+
+        $.when(factSheetPromise)
+            .then(function (data) {
+                var fsIndex = new FactSheetIndex(data);
+                var list = fsIndex.getSortedList('businessCapabilities');
+
+                var output = [];
+                for (var i = 0; i < list.length; i++) {
+                    if (list[i].tags.indexOf('AppMap') != -1) {
+                        for (var z = 0; z < list[i].processHasBusinessCapabilities.length; z++) {
+                            var processHasBusinessCapabilities = list[i].processHasBusinessCapabilities[z];
+                            if (processHasBusinessCapabilities && processHasBusinessCapabilities.processID) {
+                                var refProcess = fsIndex.index.processes[processHasBusinessCapabilities.processID];
+                                if (refProcess) {
+
+                                    output.push({
+                                        name: list[i].fullName,
+                                        id: list[i].ID,
+                                        refName: refProcess.fullName,
+                                        refId: refProcess.ID
+                                    });
+                                }
+                            }
+                        }    
+                    }
+                }
+
+
+                function link(cell, row) {
+                    return '<a href="' + that.reportSetup.baseUrl + '/businessCapabilities/' + row.id + '" target="_blank">' + cell + '</a>';
+                }
+
+                function linkRef(cell, row) {
+                    if (row.refId)
+                        return '<a href="' + that.reportSetup.baseUrl + '/processes/' + row.refId + '" target="_blank">' + cell + '</a>';
+                }
+
+                ReactDOM.render(
+                    React.createElement("div", null, 
+                        React.createElement(BootstrapTable, {data: output, striped: true, hover: true, search: true, pagination: true, exportCSV: true}, 
+                            React.createElement(TableHeaderColumn, {dataField: "id", isKey: true, hidden: true}, "ID"), 
+                            React.createElement(TableHeaderColumn, {dataField: "name", dataAlign: "left", dataSort: true, dataFormat: link, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "Application Map"), 
+                            React.createElement(TableHeaderColumn, {dataField: "refName", dataAlign: "left", dataSort: true, dataFormat: linkRef, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "eTOM")
+                         )
+                    ),
+                    document.getElementById("app")
+                );
+            });
+    };
+
+    return ReportAppMap2ETOM;
+})();
+var ReportAppMap2Platforms = (function () {
+    function ReportAppMap2Platforms(reportSetup, tagFilter, title) {
+        this.reportSetup = reportSetup;
+        this.tagFilter = tagFilter;
+        this.title = title;
+    }
+
+    ReportAppMap2Platforms.prototype.render = function () {
+        var that = this;
+
+        var factSheetPromise = $.get(this.reportSetup.apiBaseUrl + '/factsheets?relations=true'
+            + '&types[]=18&pageSize=-1'
+            + '&filterRelations[]=factSheetHasRequires'
+            + '&filterAttributes[]=displayName'
+            + '&filterAttributes[]=ID'
+            + '&filterAttributes[]=fullName'
+            + '&filterAttributes[]=resourceType'
+            + '&filterAttributes[]=tags'
+        )
+            .then(function (response) {
+                return response.data;
+            });
+
+        $.when(factSheetPromise)
+            .then(function (data) {
+                var fsIndex = new FactSheetIndex(data);
+                var list = fsIndex.getSortedList('businessCapabilities');
+
+                var output = [];
+                for (var i = 0; i < list.length; i++) {
+                    if (list[i].tags.indexOf('AppMap') != -1) {
+                        for (var z = 0; z < list[i].factSheetHasRequires.length; z++) {
+                            var factSheetHasRequires = list[i].factSheetHasRequires[z];
+                            if (factSheetHasRequires && factSheetHasRequires.factSheetRefID) {
+                                var refBC = fsIndex.index.businessCapabilities[factSheetHasRequires.factSheetRefID];
+                                if (refBC && refBC.tags.indexOf('Platform') != -1) {
+
+                                    output.push({
+                                        name: list[i].fullName,
+                                        id: list[i].ID,
+                                        refName: refBC.fullName,
+                                        refId: refBC.ID
+                                    });
+                                }
+                            }
+                        }    
+                    }
+                }
+
+
+                function link(cell, row) {
+                    return '<a href="' + that.reportSetup.baseUrl + '/businessCapabilities/' + row.id + '" target="_blank">' + cell + '</a>';
+                }
+
+                function linkRef(cell, row) {
+                    if (row.refId)
+                        return '<a href="' + that.reportSetup.baseUrl + '/businessCapabilities/' + row.refId + '" target="_blank">' + cell + '</a>';
+                }
+
+                ReactDOM.render(
+                    React.createElement("div", null, 
+                        React.createElement(BootstrapTable, {data: output, striped: true, hover: true, search: true, pagination: true, exportCSV: true}, 
+                            React.createElement(TableHeaderColumn, {dataField: "id", isKey: true, hidden: true}, "ID"), 
+                            React.createElement(TableHeaderColumn, {dataField: "name", dataAlign: "left", dataSort: true, dataFormat: link, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "Application Map"), 
+                            React.createElement(TableHeaderColumn, {dataField: "refName", dataAlign: "left", dataSort: true, dataFormat: linkRef, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "Platform")
+                         )
+                    ),
+                    document.getElementById("app")
+                );
+            });
+    };
+
+    return ReportAppMap2Platforms;
 })();
 var ReportCSMOperations = (function () {
     function ReportCSMOperations(reportSetup, tagFilter, title) {
@@ -50874,7 +51254,7 @@ var ReportCSMOperations = (function () {
                 }
 
                 ReactDOM.render(
-                    React.createElement("div", {className: "report-hierarchy"}, 
+                    React.createElement("div", {className: "report-csm-operations"}, 
                         React.createElement(BootstrapTable, {data: output, striped: false, hover: false, search: true, exportCSV: true, trClassName: trClassFormat}, 
                             React.createElement(TableHeaderColumn, {dataField: "id", isKey: true, hidden: true}, "ID"), 
                             React.createElement(TableHeaderColumn, {dataField: "level", width: "150", dataAlign: "left", filter: { type: "NumberFilter", options: levels, numberComparators: ['<='], defaultValue: { comparator: '<=' }}}, "Level"), 
@@ -51096,7 +51476,7 @@ var ReportCSMServices = (function () {
                 }
 
                 ReactDOM.render(
-                    React.createElement("div", {className: "report-hierarchy"}, 
+                    React.createElement("div", {className: "report-cms-services"}, 
                         React.createElement(BootstrapTable, {data: output, striped: false, hover: false, search: true, exportCSV: true, trClassName: trClassFormat}, 
                             React.createElement(TableHeaderColumn, {dataField: "id", isKey: true, hidden: true}, "ID"), 
                             React.createElement(TableHeaderColumn, {dataField: "hierarchyL0Name", width: "200", dataAlign: "left", dataFormat: linkL0, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "Service Domain"), 
@@ -51238,7 +51618,7 @@ var ReportCIMMasterList = (function () {
                 }
 
                 ReactDOM.render(
-                    React.createElement("div", {className: "report-hierarchy"}, 
+                    React.createElement("div", {className: "report-cim-masterlist"}, 
                         React.createElement(BootstrapTable, {data: output, striped: false, hover: false, search: true, exportCSV: true, trClassName: trClassFormat}, 
                             React.createElement(TableHeaderColumn, {dataField: "id", isKey: true, hidden: true}, "ID"), 
                             React.createElement(TableHeaderColumn, {dataField: "hierarchyL0Name", width: "200", dataAlign: "left", dataFormat: linkL0, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "Entity Domain"), 
@@ -51256,12 +51636,301 @@ var ReportCIMMasterList = (function () {
 
     return ReportCIMMasterList;
 })();
+var ReportPassbook = (function() {
+    function ReportPassbook(reportSetup, tagFilter, title) {
+        this.reportSetup = reportSetup;
+        this.tagFilter = tagFilter;
+        this.title = title;
+    }
+
+    ReportPassbook.prototype.render = function() {
+        var that = this;
+
+        var tagGroupPromise = $.get(this.reportSetup.apiBaseUrl + '/tagGroups')
+            .then(function(response) {
+                var tagGroups = {};
+                for (var i = 0; i < response.length; i++) {
+                    tagGroups[response[i]['name']] = [];
+                    for (var j = 0; j < response[i]['tags'].length; j++) {
+                        tagGroups[response[i]['name']].push(response[i]['tags'][j]['name']);
+                    }
+                }
+                return tagGroups;
+            });
+
+        var factSheetPromise = $.get(this.reportSetup.apiBaseUrl + '/factsheets?relations=true'
+            + '&types[]=19&types[]=20&pageSize=-1'
+            + '&filterRelations[]=resourceHasResourceCapabilities'
+            + '&filterAttributes[]=displayName'
+            + '&filterAttributes[]=ID'
+            + '&filterAttributes[]=fullName'
+            + '&filterAttributes[]=resourceClassificationID'
+            + '&filterAttributes[]=resourceType'
+            + '&filterAttributes[]=tags'
+        )
+            .then(function(response) {
+                return response.data;
+            });
+
+        $.when(tagGroupPromise, factSheetPromise)
+            .then(function(tagGroups, data) {
+                var fsIndex = new FactSheetIndex(data);
+                var list = fsIndex.getSortedList('resources');
+
+                var reportUtils = new ReportUtils();
+
+                var resourceClassification = [];
+                var resourceClassification = {
+                    1: "Investigating",
+                    2: "Approved",
+                    3: "Conditional",
+                    4: "Retired",
+                    5: "Unapproved"
+                };
+                var resourceClassificationOptions = [];
+                for (var key in resourceClassification) {
+                    resourceClassificationOptions.push(resourceClassification[key]);
+                }
+
+                var output = [];
+                for (var i = 0; i < list.length; i++) {
+                    if (!that.tagFilter || list[i].tags.indexOf(that.tagFilter) != -1) {
+
+                        for (var z = 0; z < list[i].resourceHasResourceCapabilities.length; z++) {
+                            var tmp = list[i].resourceHasResourceCapabilities[z];
+                            if (tmp && tmp.resourceCapabilityID) {
+                                var resourceCapability = fsIndex.index.resourceCapabilities[tmp.resourceCapabilityID];
+                                if (resourceCapability.tags.indexOf('PASS Book') != -1)
+
+                                    output.push({
+                                        name: list[i].displayName,
+                                        id: list[i].ID,
+                                        resourceCapabilityName: resourceCapability.displayName,
+                                        resourceCapabilityID: resourceCapability.ID,
+                                        resourceClassification: tmp.resourceClassificationID ? resourceClassification[tmp.resourceClassificationID] : '',
+                                    });
+                            }
+                        }
+                    }
+                }
+
+
+                function link(cell, row) {
+                    return '<a href="' + that.reportSetup.baseUrl + '/resources/' + row.id + '" target="_blank">' + cell + '</a>';
+                }
+
+                function linkRC(cell, row) {
+                    return '<a href="' + that.reportSetup.baseUrl + '/resourceCapabilities/' + row.resourceCapabilityID + '" target="_blank">' + cell + '</a>';
+                }
+
+                ReactDOM.render(
+                    React.createElement("div", null, 
+                        React.createElement(BootstrapTable, {data: output, striped: true, hover: true, search: true, pagination: true, exportCSV: true}, 
+                            React.createElement(TableHeaderColumn, {dataField: "id", isKey: true, hidden: true}, "ID"), 
+                            React.createElement(TableHeaderColumn, {dataField: "resourceCapabilityName", dataAlign: "left", dataSort: true, dataFormat: linkRC, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "Channel"), 
+                            React.createElement(TableHeaderColumn, {dataField: "name", dataAlign: "left", dataSort: true, dataFormat: link, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "Vendor / Solution"), 
+                            React.createElement(TableHeaderColumn, {dataField: "resourceClassification", width: "120", dataAlign: "left", dataSort: true, filter: { type: "SelectFilter", options: reportUtils.getLookup(resourceClassificationOptions)}}, "Vendor Type")
+                        )
+                    ),
+                    document.getElementById("app")
+                );
+            });
+    };
+
+    return ReportPassbook;
+})();
+var ReportProjectDataQuality = (function () {
+    function ReportProjectDataQuality(reportSetup, tagFilter) {
+        this.reportSetup = reportSetup;
+        this.tagFilter = tagFilter;
+    }
+
+    ReportProjectDataQuality.prototype.render = function () {
+        var that = this;
+
+        var factSheetPromise = $.get(this.reportSetup.apiBaseUrl + '/factsheets?relations=true'
+            + '&types[]=10&types[]=16'
+            + '&filterRelations[]=factSheetHasLifecycles'
+            + '&filterRelations[]=serviceHasProjects'
+            + '&filterAttributes[]=displayName'
+            + '&filterAttributes[]=fullName'
+            + '&filterAttributes[]=ID'
+            + '&filterAttributes[]=resourceType'
+            + '&filterAttributes[]=tags'
+
+            + '&pageSize=-1')
+            .then(function (response) {
+                return response.data;
+            });
+
+        $.when(factSheetPromise)
+            .then(function (data) {
+
+                var fsIndex = new FactSheetIndex(data);
+                var list = fsIndex.getSortedList('projects');
+                var reportUtils = new ReportUtils();
+
+                var output = [];
+                var markets = {};
+
+                var groupedByMarket = {};
+
+                function getGreenToRed(percent) {
+                    var r = percent < 50 ? 255 : Math.floor(255 - (percent * 2 - 100) * 255 / 100);
+                    var g = percent > 50 ? 255 : Math.floor((percent * 2) * 255 / 100);
+                    return 'rgb(' + r + ',' + g + ',0)';
+                }
+
+                groupedByMarket['unassigned'] = [];
+                for (var i = 0; i < list.length; i++) {
+                    if (!that.tagFilter || list[i].tags.indexOf(that.tagFilter) != -1) {
+
+                        // Extract market
+                        var re = /^([A-Z]{2,3})_/;
+                        var market = '';
+
+                        if ((m = re.exec(list[i].fullName)) !== null) {
+                            if (m.index === re.lastIndex) {
+                                re.lastIndex++;
+                            }
+                            // View your result using the m-variable.
+                            market = m[1];
+                            if (market && !(market in groupedByMarket)) {
+                                groupedByMarket[market] = [];
+                                markets[market] = market;
+                            }
+                            groupedByMarket[market].push(list[i]);
+
+                        } else
+                            groupedByMarket['unassigned'].push(list[i]);
+                    }
+                }
+
+                for (var key in groupedByMarket) {
+                    var compliant = [];
+                    var noncompliant = [];
+
+                    rule = 'Affects Application';
+                    compliant[rule] = 0;
+                    noncompliant[rule] = 0;
+                    for (var i = 0; i < groupedByMarket[key].length; i++) {
+                        var project = groupedByMarket[key][i];
+                        var c = false;
+                        for (var j = 0; j < project.serviceHasProjects.length; j++) {
+                            var serviceHasProject = project.serviceHasProjects[j];
+                            if (serviceHasProject && serviceHasProject.serviceID) {
+                                var service = fsIndex.index.services[serviceHasProject.serviceID];
+                                if (service) {
+                                    c = true;
+                                    break;
+                                }
+                            }
+                        }
+                        if (c) compliant[rule]++; else noncompliant[rule]++;
+
+                    }
+                    pushToOutput(output, key, rule, compliant, noncompliant,
+                        'type=16&'+ (key != 'unassigned' ? 'filter=' + key+ '_&' : '') +'serviceHasProjects[]=na'
+                    );
+
+                    rule = 'Planned Start Date';
+                    compliant[rule] = 0;
+                    noncompliant[rule] = 0;
+                    for (var i = 0; i < groupedByMarket[key].length; i++) {
+                        var project = groupedByMarket[key][i];
+                        var c = false;
+                        for (var j = 0; j < project.factSheetHasLifecycles.length; j++) {
+                            if (project.factSheetHasLifecycles[j].lifecycleStateID == 3) {
+                                c = true;
+                                break;
+                            }
+                        }
+                        if (c) compliant[rule]++; else noncompliant[rule]++;
+
+                    }
+                    pushToOutput(output, key, rule, compliant, noncompliant,
+                        'type=16&'+ (key != 'unassigned' ? 'filter=' + key+ '_&' : '') +'lifecycle[]=na'
+                    );
+
+                    rule = 'Planned Finish Date';
+                    compliant[rule] = 0;
+                    noncompliant[rule] = 0;
+                    for (var i = 0; i < groupedByMarket[key].length; i++) {
+                        var project = groupedByMarket[key][i];
+                        var c = false;
+                        for (var j = 0; j < project.factSheetHasLifecycles.length; j++) {
+                            if (project.factSheetHasLifecycles[j].lifecycleStateID == 5) {
+                                c = true;
+                                break;
+                            }
+                        }
+                        if (c) compliant[rule]++; else noncompliant[rule]++;
+
+                    }
+                    pushToOutput(output, key, rule, compliant, noncompliant,
+                        'type=16&'+ (key != 'unassigned' ? 'filter=' + key+ '_&' : '') +'lifecycle[]=na'
+                    );
+                }
+
+                function pushToOutput(output, market, rule, compliant, noncompliant, url) {
+                    output.push({
+                        rule: rule,
+                        id: key,
+                        market: market,
+                        compliant: compliant[rule],
+                        noncompliant: noncompliant[rule],
+                        percentage: 100 - Math.floor(noncompliant[rule] / (compliant[rule] + noncompliant[rule]) * 100),
+                        url: url
+                    });
+
+                }
+
+
+                function link(cell, row) {
+                    return '<a href="' + that.reportSetup.baseUrl + '/inventory?' + row.url + '" target="_blank">' + cell + '</a>';
+                }
+
+
+                function percentage(cell, row) {
+                    return '<div class="percentage" style="background-color: ' + getGreenToRed(cell) + ';">' + cell + ' %</div>';
+                }
+
+                ReactDOM.render(
+                    React.createElement("div", {className: "report-data-quality"}, 
+                        React.createElement(BootstrapTable, {data: output, striped: false, hover: true, search: true, condensed: true, exportCSV: true}, 
+                            React.createElement(TableHeaderColumn, {dataField: "id", isKey: true, hidden: true}, "ID"), 
+                            React.createElement(TableHeaderColumn, {dataField: "market", width: "80", dataAlign: "left", dataSort: false, filter: { type: "SelectFilter", options: markets}}, "Market"), 
+                            React.createElement(TableHeaderColumn, {dataField: "rule", dataAlign: "left", dataSort: true, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "Rule"), 
+                            React.createElement(TableHeaderColumn, {dataField: "compliant", dataAlign: "left", dataSort: true, filter: { type: "NumberFilter", defaultValue: { comparator: '<=' }}}, "Compliant"), 
+                            React.createElement(TableHeaderColumn, {dataField: "noncompliant", dataAlign: "left", dataSort: true, dataFormat: link, filter: { type: "NumberFilter", defaultValue: { comparator: '<=' }}}, "Non-Compliant"), 
+                            React.createElement(TableHeaderColumn, {dataField: "percentage", dataAlign: "left", dataSort: true, dataFormat: percentage, filter: { type: "NumberFilter", defaultValue: { comparator: '<=' }}}, "% Compliant")
+                        )
+                    ),
+                    document.getElementById("app")
+                );
+            });
+    };
+
+    return ReportProjectDataQuality;
+})();
 (function () {
     'use strict';
 
     var reportSetup = new ReportSetup();
 
     switch (reportSetup.getArg('report')) {
+        case 'appmap2bca':
+            var report = new ReportAppMap2BCA(reportSetup);
+            break;
+        case 'appmap2cim':
+            var report = new ReportAppMap2CIM(reportSetup);
+            break;
+        case 'appmap2etom':
+            var report = new ReportAppMap2ETOM(reportSetup);
+            break;
+        case 'appmap2platforms':
+            var report = new ReportAppMap2Platforms(reportSetup);
+            break;
         case 'app-lifecycle':
             var report = new ReportApplicationLifecycle(reportSetup, 'Application');
             break;
@@ -51273,13 +51942,20 @@ var ReportCIMMasterList = (function () {
             break;
         case 'csm-operations':
             var report = new ReportCSMOperations(reportSetup, 'CSM');
-            break;    
+            break;
         case 'csm-services':
             var report = new ReportCSMServices(reportSetup, 'CSM');
-            break;    
+            break;
         case 'data-quality':
             var report = new ReportDataQuality(reportSetup, 'Application');
             break;
+        case 'passbook':
+            var report = new ReportPassbook(reportSetup);
+            break;
+        case 'project-data-quality':
+            var report = new ReportProjectDataQuality(reportSetup);
+            break;
+
     }
 
     if (report)
