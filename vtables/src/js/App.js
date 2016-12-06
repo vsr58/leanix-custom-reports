@@ -4,6 +4,18 @@
     var reportSetup = new ReportSetup();
 
     switch (reportSetup.getArg('report')) {
+        case 'appmap2bca':
+            var report = new ReportAppMap2BCA(reportSetup);
+            break;
+        case 'appmap2cim':
+            var report = new ReportAppMap2CIM(reportSetup);
+            break;
+        case 'appmap2etom':
+            var report = new ReportAppMap2ETOM(reportSetup);
+            break;
+        case 'appmap2platforms':
+            var report = new ReportAppMap2Platforms(reportSetup);
+            break;
         case 'app-lifecycle':
             var report = new ReportApplicationLifecycle(reportSetup, 'Application');
             break;
@@ -15,13 +27,20 @@
             break;
         case 'csm-operations':
             var report = new ReportCSMOperations(reportSetup, 'CSM');
-            break;    
+            break;
         case 'csm-services':
             var report = new ReportCSMServices(reportSetup, 'CSM');
-            break;    
+            break;
         case 'data-quality':
             var report = new ReportDataQuality(reportSetup, 'Application');
             break;
+        case 'passbook':
+            var report = new ReportPassbook(reportSetup);
+            break;
+        case 'project-data-quality':
+            var report = new ReportProjectDataQuality(reportSetup);
+            break;
+
     }
 
     if (report)

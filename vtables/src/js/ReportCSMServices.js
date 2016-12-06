@@ -201,7 +201,7 @@ var ReportCSMServices = (function () {
                 }
 
                 ReactDOM.render(
-                    <div className="report-hierarchy">
+                    <div className="report-cms-services">
                         <BootstrapTable data={output} striped={false} hover={false} search={true} exportCSV={true} trClassName={trClassFormat}>
                             <TableHeaderColumn dataField="id" isKey={true} hidden={true}>ID</TableHeaderColumn>
                             <TableHeaderColumn dataField="hierarchyL0Name" width="200" dataAlign="left" dataFormat={linkL0} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>Service Domain</TableHeaderColumn>

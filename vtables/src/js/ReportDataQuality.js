@@ -1,14 +1,14 @@
-var ReportDataQuality = (function () {
+var ReportDataQuality = (function() {
     function ReportDataQuality(reportSetup, tagFilter) {
         this.reportSetup = reportSetup;
         this.tagFilter = tagFilter;
     }
 
-    ReportDataQuality.prototype.render = function () {
+    ReportDataQuality.prototype.render = function() {
         var that = this;
 
         var tagGroupPromise = $.get(this.reportSetup.apiBaseUrl + '/tagGroups')
-            .then(function (response) {
+            .then(function(response) {
                 var tagGroups = {};
                 for (var i = 0; i < response.length; i++) {
                     tagGroups[response[i]['name']] = [];
@@ -28,7 +28,7 @@ var ReportDataQuality = (function () {
             });
 
         var rolePromise = $.get(this.reportSetup.apiBaseUrl + '/userRoleDetails')
-            .then(function (response) {
+            .then(function(response) {
                 var roleIDs = {};
                 for (var i = 0; i < response.length; i++) {
                     roleIDs[response[i]['name']] = response[i]['ID'];
@@ -52,12 +52,12 @@ var ReportDataQuality = (function () {
             + '&filterAttributes[]=tags'
 
             + '&pageSize=-1')
-            .then(function (response) {
+            .then(function(response) {
                 return response.data;
             });
 
         $.when(tagGroupPromise, rolePromise, factSheetPromise)
-            .then(function (tagGroupData, roleIDs, data) {
+            .then(function(tagGroupData, roleIDs, data) {
 
                 var fsIndex = new FactSheetIndex(data);
                 var list = fsIndex.getSortedList('services');
@@ -65,7 +65,7 @@ var ReportDataQuality = (function () {
                 var tagIDs = tagGroupData.ids;
                 var tagGroups = tagGroupData.groups;
 
-                var getLookup = function (data) {
+                var getLookup = function(data) {
                     var ret = {};
                     for (var i = 0; i < data.length; i++) {
                         ret[data[i]] = data[i];
@@ -116,12 +116,11 @@ var ReportDataQuality = (function () {
                     for (var i = 0; i < groupedByMarket[key].length; i++) {
                         var service = groupedByMarket[key][i];
                         var hasActiveLifecycle = false;
-                        for (var j = 0; j < service.factSheetHasLifecycles.length; j++) {
-                            if (service.factSheetHasLifecycles[j].lifecycleStateID == 3) {
-                                hasActiveLifecycle = true;
-                                break;
-                            }
-                        }
+
+                        var current = reportUtils.getCurrentLifecycle(service);
+                        if (current && current.phaseID > 1 && current.phaseID < 4) {
+                            hasActiveLifecycle = true;
+                        } 
                         if (hasActiveLifecycle) {
                             var c = false;
                             for (var j = 0; j < service.serviceHasProjects.length; j++) {
@@ -138,7 +137,7 @@ var ReportDataQuality = (function () {
                         }
                     }
                     pushToOutput(output, key, rule, compliant, noncompliant,
-                        'type=10&serviceHasConsumers[]=' + key + '&lifecycle[]=3&lifecycle_data=1995-01-01_to_2022-11-01&serviceHasProjects[]=na'
+                        'type=10&serviceHasConsumers[]=' + key + '&lifecycle[]=2&lifecycle[]=3&serviceHasProjects[]=na'
                     );
 
                     rule = 'Retiring applications';
@@ -300,6 +299,18 @@ var ReportDataQuality = (function () {
                     pushToOutput(output, key, rule, compliant, noncompliant,
                         'type=10&lifecycle[]=3&lifecycle_data=today&serviceHasConsumers[]=' + key + '&tags_customization_level[]=na');
 
+                    rule = 'Overall Quality';
+                    compliant[rule] = 0;
+                    noncompliant[rule] = 0;
+                    for (var c in compliant) {
+                        if (c != rule) compliant[rule] += compliant[c];
+                    }
+                    for (var n in noncompliant) {
+                        if (n != rule) noncompliant[rule] += noncompliant[n];
+                    }
+                    pushToOutput(output, key, rule, compliant, noncompliant);
+
+                    break;
                 }
 
                 function pushToOutput(output, key, rule, compliant, noncompliant, url) {
@@ -325,11 +336,15 @@ var ReportDataQuality = (function () {
                     return '<div class="percentage" style="background-color: ' + getGreenToRed(cell) + ';">' + cell + ' %</div>';
                 }
 
+                function enumFormatter(cell, row, enumObject) {
+                    return enumObject[cell];
+                }
+
                 ReactDOM.render(
                     <div className="report-data-quality">
                         <BootstrapTable data={output} striped={false} hover={true} search={true} condensed={true} exportCSV={true}>
                             <TableHeaderColumn dataField="id" isKey={true} hidden={true}>ID</TableHeaderColumn>
-                            <TableHeaderColumn dataField="market" width="80" dataAlign="left" dataSort={false} filter={{ type: "SelectFilter", options: markets }}>Market</TableHeaderColumn>
+                            <TableHeaderColumn dataField="market" width="80" dataAlign="left" dataSort={false} filterFormatted dataFormat={enumFormatter} formatExtraData={markets} filter={{ type: "SelectFilter", options: markets }}>Market</TableHeaderColumn>
                             <TableHeaderColumn dataField="rule" dataAlign="left" dataSort={true} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>Rule</TableHeaderColumn>
                             <TableHeaderColumn dataField="compliant" dataAlign="left" dataSort={true} filter={{ type: "NumberFilter", defaultValue: { comparator: '<=' } }}>Compliant</TableHeaderColumn>
                             <TableHeaderColumn dataField="noncompliant" dataAlign="left" dataSort={true} dataFormat={link} filter={{ type: "NumberFilter", defaultValue: { comparator: '<=' } }}>Non-Compliant</TableHeaderColumn>

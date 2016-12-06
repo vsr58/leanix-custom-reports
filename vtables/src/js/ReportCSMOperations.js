@@ -123,7 +123,7 @@ var ReportCSMOperations = (function () {
                 }
 
                 ReactDOM.render(
-                    <div className="report-hierarchy">
+                    <div className="report-csm-operations">
                         <BootstrapTable data={output} striped={false} hover={false} search={true} exportCSV={true} trClassName={trClassFormat}>
                             <TableHeaderColumn dataField="id" isKey={true} hidden={true}>ID</TableHeaderColumn>
                             <TableHeaderColumn dataField="level" width="150" dataAlign="left" filter={{ type: "NumberFilter", options: levels, numberComparators: ['<='], defaultValue: { comparator: '<=' } }}>Level</TableHeaderColumn>
