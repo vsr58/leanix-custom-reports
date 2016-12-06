@@ -43,7 +43,8 @@ ReportUtils.prototype.getCurrentLifecycle = function (item) {
             current = {
                 phase: this.lifecycles[item.factSheetHasLifecycles[i].lifecycleStateID],
                 phaseID: item.factSheetHasLifecycles[i].lifecycleStateID,
-                startDate: this.formattedDate(curDate)
+                startDate: this.formattedDate(curDate),
+                date: curDate
             };
         }
     }
@@ -51,12 +52,19 @@ ReportUtils.prototype.getCurrentLifecycle = function (item) {
 };
 
 ReportUtils.prototype.getLifecycle = function (item, stateID) {
-
-    return {
-        phase: this.lifecycles[stateID],
-        phaseID: item.factSheetHasLifecycles[i].stateID,
-        startDate: this.formattedDate(curDate)
+    var current;
+    for (var i = 0; i < item.factSheetHasLifecycles.length; i++) {
+        if (item.factSheetHasLifecycles[i].lifecycleStateID == stateID) { 
+            var curDate = Date.parse(item.factSheetHasLifecycles[i].startDate);
+            current = {
+                phase: this.lifecycles[item.factSheetHasLifecycles[i].lifecycleStateID],
+                phaseID: item.factSheetHasLifecycles[i].lifecycleStateID,
+                startDate: this.formattedDate(curDate),
+                date: curDate
+            };
+        }
     }
+    return current;
 };
 
 ReportUtils.prototype.getTagFromGroup = function (object, validTags) {
