@@ -46,10 +46,13 @@ var ReportDataQuality = (function() {
             + '&filterRelations[]=userSubscriptions'
             + '&filterAttributes[]=description'
             + '&filterAttributes[]=displayName'
+            + '&filterAttributes[]=functionalSuitabilityID' 
             + '&filterAttributes[]=ID'
             + '&filterAttributes[]=objectCategoryID'
             + '&filterAttributes[]=resourceType'
             + '&filterAttributes[]=tags'
+            + '&filterAttributes[]=technicalSuitabilityID' 
+            
 
             + '&pageSize=-1')
             .then(function(response) {
@@ -73,6 +76,18 @@ var ReportDataQuality = (function() {
 
                     return ret;
                 };
+
+                var businessValue = {
+                    4: "4-High",
+                    3: "3-Med/High",
+                    2: "2-Low/Med",
+                    1: "1-Low"
+                };
+                var businessValueOptions = [];
+                for (var key in businessValue) {
+                    businessValueOptions.push(businessValue[key]);
+                }
+
 
                 var output = [];
                 var markets = {};
@@ -279,25 +294,34 @@ var ReportDataQuality = (function() {
                     pushToOutput(output, key, rule, compliant, noncompliant,
                         'type=10&lifecycle[]=3&lifecycle_data=today&subscriptions[]=na&subscriptions_data=r_' + roleIDs['SPOC'] + '&serviceHasConsumers[]=' + key + '&type_op=OR&lifecycle_op=OR&subscriptions_op=OR&serviceHasConsumers_op=OR');
 
-                    rule = 'has Level Of Customisation';
+                    rule = 'has Business Value';
                     compliant[rule] = 0;
                     noncompliant[rule] = 0;
-                    var customisations = tagGroups['Customisation Level'];
                     for (var i = 0; i < groupedByMarket[key].length; i++) {
                         var lifecycle = reportUtils.getCurrentLifecycle(groupedByMarket[key][i]);
                         if (lifecycle && lifecycle.phaseID == 3) {
-                            var c = false;
-                            for (var j = 0; j < customisations.length; j++) {
-                                if (reportUtils.getTagFromGroup(groupedByMarket[key][i], customisations[j])) {
-                                    c = true;
-                                    break;
-                                }
-                            }
-                            if (c) compliant[rule]++; else noncompliant[rule]++;
+                            if (groupedByMarket[key][i].functionalSuitabilityID) 
+                                compliant[rule]++; else noncompliant[rule]++;
                         }
+                        
                     }
                     pushToOutput(output, key, rule, compliant, noncompliant,
-                        'type=10&lifecycle[]=3&lifecycle_data=today&serviceHasConsumers[]=' + key + '&tags_customization_level[]=na');
+                        'type=10&lifecycle[]=3&lifecycle_data=today&serviceHasConsumers[]=' + key + '&serviceHasFunctionalSuitability[]=na&serviceHasFunctionalSuitability_op=OR');
+
+                    rule = 'has Technical Condition';
+                    compliant[rule] = 0;
+                    noncompliant[rule] = 0;
+                    for (var i = 0; i < groupedByMarket[key].length; i++) {
+                        var lifecycle = reportUtils.getCurrentLifecycle(groupedByMarket[key][i]);
+                        if (lifecycle && lifecycle.phaseID == 3) {
+                            if (groupedByMarket[key][i].technicalSuitabilityID) 
+                                compliant[rule]++; else noncompliant[rule]++;
+                        }
+                        
+                    }
+                    pushToOutput(output, key, rule, compliant, noncompliant,
+                        'type=10&lifecycle[]=3&lifecycle_data=today&serviceHasConsumers[]=' + key + '&serviceHasTechnicalSuitability[]=na&serviceHasTechnicalSuitability_op=OR');
+
 
                     rule = 'Overall Quality';
                     compliant[rule] = 0;
@@ -310,7 +334,6 @@ var ReportDataQuality = (function() {
                     }
                     pushToOutput(output, key, rule, compliant, noncompliant);
 
-                    break;
                 }
 
                 function pushToOutput(output, key, rule, compliant, noncompliant, url) {
