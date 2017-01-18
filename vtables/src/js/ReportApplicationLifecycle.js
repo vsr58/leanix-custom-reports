@@ -14,9 +14,9 @@ var ReportApplicationLifecycle = (function () {
                 for (var i = 0; i < response.length; i++) {
                     tagGroups[response[i]['name']] = [];
                     for (var j = 0; j < response[i]['tags'].length; j++) {
-                    tagGroups[response[i]['name']].push(response[i]['tags'][j]['name']);
+                        tagGroups[response[i]['name']].push(response[i]['tags'][j]['name']);
                     }
-                } 
+                }
                 return tagGroups;
             });
 
@@ -28,7 +28,7 @@ var ReportApplicationLifecycle = (function () {
             + '&filterAttributes[]=fullName'
             + '&filterAttributes[]=resourceType'
             + '&filterAttributes[]=tags'
-            )
+        )
             .then(function (response) {
                 return response.data;
             });
@@ -41,7 +41,7 @@ var ReportApplicationLifecycle = (function () {
                 var list = fsIndex.getSortedList('services');
 
                 var reportUtils = new ReportUtils();
-              
+
 
                 var getTagFromGroup = function (object, validTags) {
                     var cc = object.tags.filter(function (x) {
@@ -69,11 +69,22 @@ var ReportApplicationLifecycle = (function () {
                 var output = [];
                 var markets = {};
                 var projectEffects = {};
-           
+
                 var projectTypes = tagGroups['Project Type'];
-                var costCentres = tagGroups['Cost Centre'];
+                var costCentres = tagGroups['CostCentre'];
                 var appTypes = tagGroups['Application Type'];
                 var lifecycleArray = reportUtils.lifecycleArray();
+
+                var projectImpacts = {
+                    1: "Adds",
+                    2: "Modifies",
+                    3: "Sunsets"
+                };
+                var projectImpactOptions = [];
+                for (var key in projectImpacts) {
+                    projectImpactOptions.push(projectImpacts[key]);
+                }
+
                 for (var i = 0; i < list.length; i++) {
                     if (!that.tagFilter || list[i].tags.indexOf(that.tagFilter) != -1) {
 
@@ -110,7 +121,7 @@ var ReportApplicationLifecycle = (function () {
                                         market: market,
                                         projectId: tmp.projectID,
                                         projectName: fsIndex.index.projects[tmp.projectID].fullName,
-                                        projectEffect: tmp.comment,
+                                        projectEffect: tmp.projectImpactID ? projectImpacts[tmp.projectImpactID] : '',
                                         projectType: projectType,
                                         lifecyclePhase: currentLifecycle ? currentLifecycle.phase : '',
                                         lifecycleStart: currentLifecycle ? currentLifecycle.startDate : ''
@@ -163,7 +174,7 @@ var ReportApplicationLifecycle = (function () {
                             <TableHeaderColumn dataField="lifecyclePhase" width="100" dataAlign="left" dataSort={true} filter={{ type: "SelectFilter", options: getLookup(lifecycleArray) }}>Phase</TableHeaderColumn>
                             <TableHeaderColumn dataField="lifecycleStart" width="100" dataAlign="left" dataSort={true} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>Phase Start</TableHeaderColumn>
                             <TableHeaderColumn dataField="projectName" dataAlign="left" dataSort={true} dataFormat={linkProject} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>Project Name</TableHeaderColumn>
-                            <TableHeaderColumn dataField="projectEffect" width="100" dataAlign="left" dataSort={true} filter={{ type: "SelectFilter", options: getLookup(projectEffects) }}>Project Effect</TableHeaderColumn>
+                            <TableHeaderColumn dataField="projectEffect" width="100" dataAlign="left" dataSort={true} filter={{ type: "SelectFilter", options: getLookup(projectImpactOptions) }}>Project Effect</TableHeaderColumn>
                             <TableHeaderColumn dataField="projectType" width="100" dataAlign="left" dataSort={true} filter={{ type: "SelectFilter", options: getLookup(projectTypes) }}>Project Type</TableHeaderColumn>
                         </BootstrapTable>
                     </div>,

@@ -32,7 +32,7 @@
             var report = new ReportCSMServices(reportSetup, 'CSM');
             break;
         case 'data-quality':
-            var report = new ReportDataQuality(reportSetup, 'Application');
+            var report = new ReportDataQuality(reportSetup);
             break;
         case 'passbook':
             var report = new ReportPassbook(reportSetup);
