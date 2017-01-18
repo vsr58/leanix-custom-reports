@@ -87,12 +87,11 @@ var ReportApplicationPortfolio = (function () {
                 var projectEffects = {};
                 var projectTypes = {};
 
-                var costCentres = tagGroups['Cost Centre'];
+                var costCentres = tagGroups['CostCentre'];
                 var appTypes = tagGroups['Application Type'];
                 var customisations = tagGroups['Customisation Level'];
                 var complexities = tagGroups['Application Complexity'];
-                var pciFlags = tagGroups['PCI Flag'];
-                var soxFlags = tagGroups['SOX Flag'];
+                var soxpciFlags = tagGroups['SOX / PCI'];
                 var recommendations = tagGroups['Recommendation'];
                 var lastUpgrades = tagGroups['Last Major Upgrade'];
 
@@ -234,7 +233,6 @@ var ReportApplicationPortfolio = (function () {
                             supportName: support.length ? support[0].name : '',
                             lastUpgrade: getTagFromGroup(list[i], lastUpgrades),
                             
-
                             customisation: getTagFromGroup(list[i], customisations),
                             businessValue: list[i].functionalSuitabilityID ? businessValue[list[i].functionalSuitabilityID] : '',
                             technicalCondition: list[i].technicalSuitabilityID ? technicalCondition[list[i].technicalSuitabilityID] : '',
@@ -242,8 +240,7 @@ var ReportApplicationPortfolio = (function () {
                             businessCriticality: list[i].businessCriticalityID ? businessCriticality[list[i].businessCriticalityID] : '',
                             appType: getTagFromGroup(list[i], appTypes),
                             alias: list[i].alias,
-                            pciFlag: getTagFromGroup(list[i], pciFlags),
-                            soxFlag: getTagFromGroup(list[i], soxFlags),
+                            soxpciFlag: getTagFromGroup(list[i], soxpciFlags),
                             itOwner: itOwner ? users[itOwner] : '',
                             businessOwner: businessOwner ? users[businessOwner] : '',
                             spoc: spoc ? users[spoc] : '',
@@ -311,9 +308,8 @@ var ReportApplicationPortfolio = (function () {
                             <TableHeaderColumn dataField="businessCriticality" width="120" dataAlign="left" dataSort={true} filter={{ type: "SelectFilter", options: getLookup(businessCriticalityOptions) }}>Business Criticality</TableHeaderColumn>
                             <TableHeaderColumn dataField="alias" width="100" dataAlign="left" dataSort={true} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>Alternate names</TableHeaderColumn>
                             <TableHeaderColumn dataField="appType" width="100" dataAlign="left" dataSort={true} filter={{ type: "SelectFilter", options: getLookup(appTypes) }}>App Type</TableHeaderColumn>
-                            <TableHeaderColumn dataField="soxFlag" width="100" dataAlign="left" dataSort={true} filter={{ type: "SelectFilter", options: getLookup(soxFlags) }}>SOX Flag</TableHeaderColumn>
-                            <TableHeaderColumn dataField="pciFlag" width="100" dataAlign="left" dataSort={true} filter={{ type: "SelectFilter", options: getLookup(pciFlags) }}>PCI Flag</TableHeaderColumn>
-                            <TableHeaderColumn dataField="itOwner" width="100" dataAlign="left" dataSort={true} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>IT Owner</TableHeaderColumn>
+                            <TableHeaderColumn dataField="soxpciFlag" width="100" dataAlign="left" dataSort={true} filter={{ type: "SelectFilter", options: getLookup(soxpciFlags) }}>SOX / PCI</TableHeaderColumn>
+                             <TableHeaderColumn dataField="itOwner" width="100" dataAlign="left" dataSort={true} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>IT Owner</TableHeaderColumn>
                             <TableHeaderColumn dataField="businessOwner" width="100" dataAlign="left" dataSort={true} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>Business Owner</TableHeaderColumn>
                             <TableHeaderColumn dataField="spoc" width="100" dataAlign="left" dataSort={true} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>SPOC</TableHeaderColumn>
 
