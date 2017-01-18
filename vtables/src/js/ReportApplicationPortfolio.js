@@ -214,7 +214,7 @@ var ReportApplicationPortfolio = (function () {
 
                         output.push({
                             name: list[i].fullName,
-                            description: list[i].description,
+                            description: list[i].description.replace(/(?:\r\n|\r|\n)/g, ' '),
                             cobraId: cobras.length ? cobras[0].id : '',
                             cobraName: cobras.length ? cobras[0].name : '',
                             id: list[i].ID,
