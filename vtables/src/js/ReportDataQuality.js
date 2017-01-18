@@ -1,14 +1,14 @@
-var ReportDataQuality = (function() {
+var ReportDataQuality = (function () {
     function ReportDataQuality(reportSetup, tagFilter) {
         this.reportSetup = reportSetup;
         this.tagFilter = tagFilter;
     }
 
-    ReportDataQuality.prototype.render = function() {
+    ReportDataQuality.prototype.render = function () {
         var that = this;
 
         var tagGroupPromise = $.get(this.reportSetup.apiBaseUrl + '/tagGroups')
-            .then(function(response) {
+            .then(function (response) {
                 var tagGroups = {};
                 for (var i = 0; i < response.length; i++) {
                     tagGroups[response[i]['name']] = [];
@@ -28,7 +28,7 @@ var ReportDataQuality = (function() {
             });
 
         var rolePromise = $.get(this.reportSetup.apiBaseUrl + '/userRoleDetails')
-            .then(function(response) {
+            .then(function (response) {
                 var roleIDs = {};
                 for (var i = 0; i < response.length; i++) {
                     roleIDs[response[i]['name']] = response[i]['ID'];
@@ -46,21 +46,21 @@ var ReportDataQuality = (function() {
             + '&filterRelations[]=userSubscriptions'
             + '&filterAttributes[]=description'
             + '&filterAttributes[]=displayName'
-            + '&filterAttributes[]=functionalSuitabilityID' 
+            + '&filterAttributes[]=functionalSuitabilityID'
             + '&filterAttributes[]=ID'
             + '&filterAttributes[]=objectCategoryID'
             + '&filterAttributes[]=resourceType'
             + '&filterAttributes[]=tags'
-            + '&filterAttributes[]=technicalSuitabilityID' 
-            
+            + '&filterAttributes[]=technicalSuitabilityID'
+
 
             + '&pageSize=-1')
-            .then(function(response) {
+            .then(function (response) {
                 return response.data;
             });
 
         $.when(tagGroupPromise, rolePromise, factSheetPromise)
-            .then(function(tagGroupData, roleIDs, data) {
+            .then(function (tagGroupData, roleIDs, data) {
 
                 var fsIndex = new FactSheetIndex(data);
                 var list = fsIndex.getSortedList('services');
@@ -68,7 +68,7 @@ var ReportDataQuality = (function() {
                 var tagIDs = tagGroupData.ids;
                 var tagGroups = tagGroupData.groups;
 
-                var getLookup = function(data) {
+                var getLookup = function (data) {
                     var ret = {};
                     for (var i = 0; i < data.length; i++) {
                         ret[data[i]] = data[i];
@@ -101,10 +101,11 @@ var ReportDataQuality = (function() {
                 }
 
                 for (var i = 0; i < list.length; i++) {
-                    if (!that.tagFilter || list[i].tags.indexOf(that.tagFilter) != -1) {
-
-                        for (var z = 0; z < list[i].serviceHasConsumers.length; z++) {
-                            var tmp = list[i].serviceHasConsumers[z];
+                    var service = list[i];
+                    if (service.tags.indexOf('Application') != -1 && service.tags.indexOf('IT') != -1) {
+                        
+                        for (var z = 0; z < service.serviceHasConsumers.length; z++) {
+                            var tmp = service.serviceHasConsumers[z];
                             if (tmp) {
                                 if (tmp.consumerID && fsIndex.index.consumers[tmp.consumerID]) {
 
@@ -114,7 +115,7 @@ var ReportDataQuality = (function() {
                                         markets[market] = market;
                                     }
 
-                                    groupedByMarket[tmp.consumerID].push(list[i]);
+                                    groupedByMarket[tmp.consumerID].push(service);
                                 }
                             }
                         }
@@ -124,19 +125,14 @@ var ReportDataQuality = (function() {
                 for (var key in groupedByMarket) {
                     var compliant = [];
                     var noncompliant = [];
-
-                    rule = 'Adding applications';
+                    
+                    rule = 'Adding applications, but no project';
                     compliant[rule] = 0;
                     noncompliant[rule] = 0;
                     for (var i = 0; i < groupedByMarket[key].length; i++) {
                         var service = groupedByMarket[key][i];
-                        var hasActiveLifecycle = false;
 
-                        var current = reportUtils.getCurrentLifecycle(service);
-                        if (current && current.phaseID > 1 && current.phaseID < 4) {
-                            hasActiveLifecycle = true;
-                        } 
-                        if (hasActiveLifecycle) {
+                        if (hasActiveLifecycle(service)) {
                             var c = false;
                             for (var j = 0; j < service.serviceHasProjects.length; j++) {
                                 var serviceHasProject = service.serviceHasProjects[j];
@@ -152,22 +148,42 @@ var ReportDataQuality = (function() {
                         }
                     }
                     pushToOutput(output, key, rule, compliant, noncompliant,
-                        'type=10&serviceHasConsumers[]=' + key + '&lifecycle[]=2&lifecycle[]=3&serviceHasProjects[]=na'
+                        'lifecycle[]=2&lifecycle[]=3&serviceHasProjects[]=na'
                     );
 
-                    rule = 'Retiring applications';
+                    rule = 'Adding applications, but project impact != adding';
                     compliant[rule] = 0;
                     noncompliant[rule] = 0;
                     for (var i = 0; i < groupedByMarket[key].length; i++) {
                         var service = groupedByMarket[key][i];
-                        var isRetired = false;
-                        for (var j = 0; j < service.factSheetHasLifecycles.length; j++) {
-                            if (service.factSheetHasLifecycles[j].lifecycleStateID == 5) {
-                                isRetired = true;
-                                break;
+
+                        if (hasActiveLifecycle(service)) {
+                            var c = false;
+                            for (var j = 0; j < service.serviceHasProjects.length; j++) {
+                                var serviceHasProject = service.serviceHasProjects[j];
+                                if (serviceHasProject && serviceHasProject.projectID) {
+                                    var proj = fsIndex.index.projects[serviceHasProject.projectID];
+                                    if (proj && serviceHasProject.projectImpactID == "1") {
+                                        c = true;
+                                    }
+                                    if (c) compliant[rule]++; else noncompliant[rule]++;
+                                    break;
+                                }
                             }
                         }
-                        if (isRetired) {
+                    }
+                    pushToOutput(output, key, rule, compliant, noncompliant,
+                        'lifecycle[]=2&lifecycle[]=3&serviceHasProjects[]=na&serviceHasProjects_op=NOR'
+                    );
+
+
+                    rule = 'Retiring applications, but no project';
+                    compliant[rule] = 0;
+                    noncompliant[rule] = 0;
+                    for (var i = 0; i < groupedByMarket[key].length; i++) {
+                        var service = groupedByMarket[key][i];
+
+                        if (isRetired(service)) {
                             var c = false;
                             for (var j = 0; j < service.serviceHasProjects.length; j++) {
                                 var serviceHasProject = service.serviceHasProjects[j];
@@ -183,7 +199,33 @@ var ReportDataQuality = (function() {
                         }
                     }
                     pushToOutput(output, key, rule, compliant, noncompliant,
-                        'type=10&serviceHasConsumers[]=' + key + '&lifecycle[]=5&lifecycle_data=1995-01-01_to_2022-11-01&serviceHasProjects[]=na'
+                        'lifecycle[]=5&lifecycle_data=1995-01-01_to_2022-11-01&serviceHasProjects[]=na'
+                    );
+
+                    rule = 'Retiring applications, but project impact != retired';
+                    compliant[rule] = 0;
+                    noncompliant[rule] = 0;
+                    for (var i = 0; i < groupedByMarket[key].length; i++) {
+                        var service = groupedByMarket[key][i];
+
+                        if (isRetired(service)) {
+                            var c = false;
+                            for (var j = 0; j < service.serviceHasProjects.length; j++) {
+                                var serviceHasProject = service.serviceHasProjects[j];
+                                if (serviceHasProject && serviceHasProject.projectID) {
+                                    var proj = fsIndex.index.projects[serviceHasProject.projectID];
+                                    if (proj && serviceHasProject.projectImpactID == "3") {
+                                        c = true;
+                                    }
+                                    if (c) compliant[rule]++; else noncompliant[rule]++;
+                                    break;
+                                }
+                            }
+                            if (c) compliant[rule]++; else noncompliant[rule]++;
+                        }
+                    }
+                    pushToOutput(output, key, rule, compliant, noncompliant,
+                        'lifecycle[]=5&lifecycle_data=1995-01-01_to_2022-11-01&serviceHasProjects[]=na&serviceHasProjects_op=NOR'
                     );
 
                     rule = 'has COBRA';
@@ -206,17 +248,21 @@ var ReportDataQuality = (function() {
                         }
                     }
                     pushToOutput(output, key, rule, compliant, noncompliant,
-                        'type=10&lifecycle[]=3&lifecycle_data=today&serviceHasConsumers[]=' + key + '&serviceHasBusinessCapabilities[]=tag-' + tagIDs['AppMap'] + '&serviceHasBusinessCapabilities_op=NOR&tags_service_type[]=Application');
+                        'lifecycle[]=3&lifecycle_data=today&serviceHasBusinessCapabilities[]=tag-' + tagIDs['AppMap'] + '&serviceHasBusinessCapabilities_op=NOR&tags_service_type[]=Application');
 
                     rule = 'has COTS Package';
                     compliant[rule] = 0;
                     noncompliant[rule] = 0;
                     for (var i = 0; i < groupedByMarket[key].length; i++) {
-                        if (reportUtils.getCurrentLifecycle(groupedByMarket[key][i]) && reportUtils.getCurrentLifecycle(groupedByMarket[key][i]).phaseID == 3 && reportUtils.getTagFromGroup(groupedByMarket[key][i], 'COTS Package'))
-                            compliant[rule]++; else noncompliant[rule]++;
+                        if (reportUtils.getCurrentLifecycle(groupedByMarket[key][i]) && reportUtils.getCurrentLifecycle(groupedByMarket[key][i]).phaseID == 3) {
+                            if (reportUtils.getTagFromGroup(groupedByMarket[key][i], 'COTS Package')) 
+                                compliant[rule]++; 
+                            else 
+                                noncompliant[rule]++;
+                        }
                     }
                     pushToOutput(output, key, rule, compliant, noncompliant,
-                        'type=10&lifecycle[]=3&lifecycle_data=today&serviceHasConsumers[]=' + key + '&serviceHasBusinessCapabilities[]=tag-' + tagIDs['COTS Package'] + '&serviceHasBusinessCapabilities_op=NOR&tags_service_type[]=Application');
+                        'lifecycle[]=3&lifecycle_data=today&tags_cots_package[]=COTS+Package&tags_cots_package_op=NOR&serviceHasBusinessCapabilities_op=NOR&tags_service_type[]=Application');
 
                     rule = 'has Software Product';
                     compliant[rule] = 0;
@@ -238,7 +284,7 @@ var ReportDataQuality = (function() {
                         }
                     }
                     pushToOutput(output, key, rule, compliant, noncompliant,
-                        'type=10&lifecycle[]=3&lifecycle_data=today&serviceHasConsumers[]=' + key + '&serviceHasSoftware[]=na');
+                        'lifecycle[]=3&lifecycle_data=today&serviceHasSoftware[]=na');
 
                     rule = 'has Description';
                     compliant[rule] = 0;
@@ -248,7 +294,16 @@ var ReportDataQuality = (function() {
                             if (groupedByMarket[key][i].description) compliant[rule]++; else noncompliant[rule]++;
                         }
                     }
-                    pushToOutput(output, key, rule, compliant, noncompliant, 'type=10&lifecycle[]=3&lifecycle_data=today&serviceHasConsumers[]=' + key + '&quality[]=4');
+                    pushToOutput(output, key, rule, compliant, noncompliant, 'lifecycle[]=3&lifecycle_data=today&quality[]=4');
+
+                    rule = 'has Lifecycle';
+                    compliant[rule] = 0;
+                    noncompliant[rule] = 0;
+                    for (var i = 0; i < groupedByMarket[key].length; i++) {
+                        if (reportUtils.getCurrentLifecycle(groupedByMarket[key][i])) compliant[rule]++; else noncompliant[rule]++;
+                    }
+                    pushToOutput(output, key, rule, compliant, noncompliant, 'quality[]=5');
+
 
                     rule = 'has IT Owner';
                     compliant[rule] = 0;
@@ -270,7 +325,7 @@ var ReportDataQuality = (function() {
                     }
 
                     pushToOutput(output, key, rule, compliant, noncompliant,
-                        'type=10&lifecycle[]=3&lifecycle_data=today&subscriptions[]=na&subscriptions_data=r_' + roleIDs['IT Owner'] + '&serviceHasConsumers[]=' + key + '&type_op=OR&lifecycle_op=OR&subscriptions_op=OR&serviceHasConsumers_op=OR');
+                        'lifecycle[]=3&lifecycle_data=today&subscriptions[]=na&subscriptions_data=r_' + roleIDs['IT Owner'] + '&type_op=OR&lifecycle_op=OR&subscriptions_op=OR&serviceHasConsumers_op=OR');
 
                     rule = 'has SPOC';
                     compliant[rule] = 0;
@@ -292,7 +347,7 @@ var ReportDataQuality = (function() {
                     }
 
                     pushToOutput(output, key, rule, compliant, noncompliant,
-                        'type=10&lifecycle[]=3&lifecycle_data=today&subscriptions[]=na&subscriptions_data=r_' + roleIDs['SPOC'] + '&serviceHasConsumers[]=' + key + '&type_op=OR&lifecycle_op=OR&subscriptions_op=OR&serviceHasConsumers_op=OR');
+                        'lifecycle[]=3&lifecycle_data=today&subscriptions[]=na&subscriptions_data=r_' + roleIDs['SPOC'] + '&type_op=OR&lifecycle_op=OR&subscriptions_op=OR&serviceHasConsumers_op=OR');
 
                     rule = 'has Business Value';
                     compliant[rule] = 0;
@@ -300,13 +355,13 @@ var ReportDataQuality = (function() {
                     for (var i = 0; i < groupedByMarket[key].length; i++) {
                         var lifecycle = reportUtils.getCurrentLifecycle(groupedByMarket[key][i]);
                         if (lifecycle && lifecycle.phaseID == 3) {
-                            if (groupedByMarket[key][i].functionalSuitabilityID) 
+                            if (groupedByMarket[key][i].functionalSuitabilityID)
                                 compliant[rule]++; else noncompliant[rule]++;
                         }
-                        
+
                     }
                     pushToOutput(output, key, rule, compliant, noncompliant,
-                        'type=10&lifecycle[]=3&lifecycle_data=today&serviceHasConsumers[]=' + key + '&serviceHasFunctionalSuitability[]=na&serviceHasFunctionalSuitability_op=OR');
+                        'lifecycle[]=3&lifecycle_data=today&serviceHasFunctionalSuitability[]=na&serviceHasFunctionalSuitability_op=OR');
 
                     rule = 'has Technical Condition';
                     compliant[rule] = 0;
@@ -314,14 +369,27 @@ var ReportDataQuality = (function() {
                     for (var i = 0; i < groupedByMarket[key].length; i++) {
                         var lifecycle = reportUtils.getCurrentLifecycle(groupedByMarket[key][i]);
                         if (lifecycle && lifecycle.phaseID == 3) {
-                            if (groupedByMarket[key][i].technicalSuitabilityID) 
+                            if (groupedByMarket[key][i].technicalSuitabilityID)
                                 compliant[rule]++; else noncompliant[rule]++;
                         }
-                        
+
                     }
                     pushToOutput(output, key, rule, compliant, noncompliant,
-                        'type=10&lifecycle[]=3&lifecycle_data=today&serviceHasConsumers[]=' + key + '&serviceHasTechnicalSuitability[]=na&serviceHasTechnicalSuitability_op=OR');
+                        'lifecycle[]=3&lifecycle_data=today&serviceHasTechnicalSuitability[]=na&serviceHasTechnicalSuitability_op=OR');
 
+                    rule = 'has Cost Centre';
+                    compliant[rule] = 0;
+                    noncompliant[rule] = 0;
+                    for (var i = 0; i < groupedByMarket[key].length; i++) {
+                        if (reportUtils.getCurrentLifecycle(groupedByMarket[key][i]) && reportUtils.getCurrentLifecycle(groupedByMarket[key][i]).phaseID == 3) {
+                            if (reportUtils.getTagFromGroup(groupedByMarket[key][i], tagGroups['CostCentre'])) 
+                                compliant[rule]++; 
+                            else 
+                                noncompliant[rule]++;
+                        }
+                    }
+                    pushToOutput(output, key, rule, compliant, noncompliant,
+                        'lifecycle[]=3&lifecycle_data=today&tags_cotscentre[]=na&serviceHasBusinessCapabilities_op=NOR&tags_service_type[]=Application');
 
                     rule = 'Overall Quality';
                     compliant[rule] = 0;
@@ -336,6 +404,27 @@ var ReportDataQuality = (function() {
 
                 }
 
+                function hasActiveLifecycle(service) {
+                    var hasActiveLifecycle = false;
+
+                    var current = reportUtils.getCurrentLifecycle(service);
+                    if (current && current.phaseID > 1 && current.phaseID < 4) {
+                        hasActiveLifecycle = true;
+                    }
+                    return hasActiveLifecycle;
+                }
+
+                function isRetired(service) {
+                    var isRetired = false;
+                    for (var j = 0; j < service.factSheetHasLifecycles.length; j++) {
+                        if (service.factSheetHasLifecycles[j].lifecycleStateID == 5) {
+                            isRetired = true;
+                            break;
+                        }
+                    }
+                    return isRetired;
+                }
+
                 function pushToOutput(output, key, rule, compliant, noncompliant, url) {
                     output.push({
                         rule: rule,
@@ -344,14 +433,15 @@ var ReportDataQuality = (function() {
                         compliant: compliant[rule],
                         noncompliant: noncompliant[rule],
                         percentage: 100 - Math.floor(noncompliant[rule] / (compliant[rule] + noncompliant[rule]) * 100),
-                        url: url
+                        url: url ? 'type=10&serviceHasConsumers[]=' + key + '&tags_costcentre[]=IT&' + url : ''
                     });
 
                 }
 
-
                 function link(cell, row) {
-                    return '<a href="' + that.reportSetup.baseUrl + '/inventory?' + row.url + '" target="_blank">' + cell + '</a>';
+                    if (row.url)
+                        return '<a href="' + that.reportSetup.baseUrl + '/inventory?' + row.url + '" target="_blank">' + cell + '</a>';
+                    else return cell;
                 }
 
 
