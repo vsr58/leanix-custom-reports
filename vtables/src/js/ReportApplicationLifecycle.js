@@ -72,7 +72,7 @@ var ReportApplicationLifecycle = (function () {
 
                 var projectTypes = tagGroups['Project Type'];
                 var costCentres = tagGroups['CostCentre'];
-                var appTypes = tagGroups['Application Type'];
+                var deployments = tagGroups['Deployment'];
                 var lifecycleArray = reportUtils.lifecycleArray();
 
                 var projectImpacts = {
@@ -117,7 +117,7 @@ var ReportApplicationLifecycle = (function () {
                                         name: list[i].fullName,
                                         id: list[i].ID,
                                         costCentre: getTagFromGroup(list[i], costCentres),
-                                        appType: getTagFromGroup(list[i], appTypes),
+                                        deployment: getTagFromGroup(list[i], deployments),
                                         market: market,
                                         projectId: tmp.projectID,
                                         projectName: fsIndex.index.projects[tmp.projectID].fullName,
@@ -138,7 +138,7 @@ var ReportApplicationLifecycle = (function () {
                                 name: list[i].fullName,
                                 id: list[i].ID,
                                 costCentre: getTagFromGroup(list[i], costCentres),
-                                appType: getTagFromGroup(list[i], appTypes),
+                                deployment: getTagFromGroup(list[i], deployments),
                                 market: market,
                                 projectId: '',
                                 projectName: '',
@@ -170,7 +170,7 @@ var ReportApplicationLifecycle = (function () {
                             <TableHeaderColumn dataField="market" width="80" dataAlign="left" dataSort={true} filter={{ type: "SelectFilter", options: markets }}>Market</TableHeaderColumn>
                             <TableHeaderColumn dataField="name" dataAlign="left" dataSort={true} dataFormat={link} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>Application Name</TableHeaderColumn>
                             <TableHeaderColumn dataField="costCentre" width="120" dataAlign="left" dataSort={true} filter={{ type: "SelectFilter", options: getLookup(costCentres) }}>Cost Centre</TableHeaderColumn>
-                            <TableHeaderColumn dataField="appType" width="100" dataAlign="left" dataSort={true} filter={{ type: "SelectFilter", options: getLookup(appTypes) }}>App Type</TableHeaderColumn>
+                            <TableHeaderColumn dataField="deployment" width="100" dataAlign="left" dataSort={true} filter={{ type: "SelectFilter", options: getLookup(deployments) }}>Deployment</TableHeaderColumn>
                             <TableHeaderColumn dataField="lifecyclePhase" width="100" dataAlign="left" dataSort={true} filter={{ type: "SelectFilter", options: getLookup(lifecycleArray) }}>Phase</TableHeaderColumn>
                             <TableHeaderColumn dataField="lifecycleStart" width="100" dataAlign="left" dataSort={true} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>Phase Start</TableHeaderColumn>
                             <TableHeaderColumn dataField="projectName" dataAlign="left" dataSort={true} dataFormat={linkProject} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>Project Name</TableHeaderColumn>
