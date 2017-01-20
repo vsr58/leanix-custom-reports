@@ -50113,32 +50113,6 @@ var ReportDataQuality = (function () {
                         'lifecycle[]=2&lifecycle[]=3&serviceHasProjects[]=na'
                     );
 
-                    rule = 'Adding applications, but project impact != adding';
-                    compliant[rule] = 0;
-                    noncompliant[rule] = 0;
-                    for (var i = 0; i < groupedByMarket[key].length; i++) {
-                        var service = groupedByMarket[key][i];
-
-                        if (hasActiveLifecycle(service)) {
-                            var c = false;
-                            for (var j = 0; j < service.serviceHasProjects.length; j++) {
-                                var serviceHasProject = service.serviceHasProjects[j];
-                                if (serviceHasProject && serviceHasProject.projectID) {
-                                    var proj = fsIndex.index.projects[serviceHasProject.projectID];
-                                    if (proj && serviceHasProject.projectImpactID == "1") {
-                                        c = true;
-                                    }
-                                    if (c) compliant[rule]++; else noncompliant[rule]++;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    pushToOutput(output, key, rule, compliant, noncompliant,
-                        'lifecycle[]=2&lifecycle[]=3&serviceHasProjects[]=na&serviceHasProjects_op=NOR'
-                    );
-
-
                     rule = 'Retiring applications, but no project';
                     compliant[rule] = 0;
                     noncompliant[rule] = 0;
@@ -50162,32 +50136,6 @@ var ReportDataQuality = (function () {
                     }
                     pushToOutput(output, key, rule, compliant, noncompliant,
                         'lifecycle[]=5&lifecycle_data=1995-01-01_to_2022-11-01&serviceHasProjects[]=na'
-                    );
-
-                    rule = 'Retiring applications, but project impact != retired';
-                    compliant[rule] = 0;
-                    noncompliant[rule] = 0;
-                    for (var i = 0; i < groupedByMarket[key].length; i++) {
-                        var service = groupedByMarket[key][i];
-
-                        if (isRetired(service)) {
-                            var c = false;
-                            for (var j = 0; j < service.serviceHasProjects.length; j++) {
-                                var serviceHasProject = service.serviceHasProjects[j];
-                                if (serviceHasProject && serviceHasProject.projectID) {
-                                    var proj = fsIndex.index.projects[serviceHasProject.projectID];
-                                    if (proj && serviceHasProject.projectImpactID == "3") {
-                                        c = true;
-                                    }
-                                    if (c) compliant[rule]++; else noncompliant[rule]++;
-                                    break;
-                                }
-                            }
-                            if (c) compliant[rule]++; else noncompliant[rule]++;
-                        }
-                    }
-                    pushToOutput(output, key, rule, compliant, noncompliant,
-                        'lifecycle[]=5&lifecycle_data=1995-01-01_to_2022-11-01&serviceHasProjects[]=na&serviceHasProjects_op=NOR'
                     );
 
                     rule = 'has COBRA';
@@ -50217,20 +50165,20 @@ var ReportDataQuality = (function () {
                     noncompliant[rule] = 0;
                     for (var i = 0; i < groupedByMarket[key].length; i++) {
                         if (reportUtils.getCurrentLifecycle(groupedByMarket[key][i]) && reportUtils.getCurrentLifecycle(groupedByMarket[key][i]).phaseID == 3) {
-                            if (reportUtils.getTagFromGroup(groupedByMarket[key][i], 'COTS Package')) 
+                            if (reportUtils.getTagFromGroup(groupedByMarket[key][i], 'COTS Package') || reportUtils.getTagFromGroup(groupedByMarket[key][i], 'Mo COTS Package')) 
                                 compliant[rule]++; 
                             else 
                                 noncompliant[rule]++;
                         }
                     }
                     pushToOutput(output, key, rule, compliant, noncompliant,
-                        'lifecycle[]=3&lifecycle_data=today&tags_cots_package[]=COTS+Package&tags_cots_package_op=NOR&serviceHasBusinessCapabilities_op=NOR&tags_service_type[]=Application');
+                        'lifecycle[]=3&lifecycle_data=today&tags_cots_package[]=COTS+Package&tags_cots_package[]=No+COTS+Package&tags_cots_package_op=NOR&serviceHasBusinessCapabilities_op=NOR&tags_service_type[]=Application');
 
                     rule = 'has Software Product';
                     compliant[rule] = 0;
                     noncompliant[rule] = 0;
                     for (var i = 0; i < groupedByMarket[key].length; i++) {
-                        if (reportUtils.getCurrentLifecycle(groupedByMarket[key][i]) && reportUtils.getCurrentLifecycle(groupedByMarket[key][i]).phaseID == 3) {
+                        if (reportUtils.getTagFromGroup(groupedByMarket[key][i], 'COTS Package') && reportUtils.getCurrentLifecycle(groupedByMarket[key][i]) && reportUtils.getCurrentLifecycle(groupedByMarket[key][i]).phaseID == 3) {
                             var c = false;
                             for (var z = 0; z < groupedByMarket[key][i].serviceHasResources.length; z++) {
                                 var tmp = groupedByMarket[key][i].serviceHasResources[z];
@@ -50246,7 +50194,7 @@ var ReportDataQuality = (function () {
                         }
                     }
                     pushToOutput(output, key, rule, compliant, noncompliant,
-                        'lifecycle[]=3&lifecycle_data=today&serviceHasSoftware[]=na');
+                        'lifecycle[]=3&lifecycle_data=today&tags_cots_package[]=COTS+Package&serviceHasSoftware[]=na');
 
                     rule = 'has Description';
                     compliant[rule] = 0;
@@ -50419,7 +50367,7 @@ var ReportDataQuality = (function () {
                     React.createElement("div", {className: "report-data-quality"}, 
                         React.createElement(BootstrapTable, {data: output, striped: false, hover: true, search: true, condensed: true, exportCSV: true}, 
                             React.createElement(TableHeaderColumn, {dataField: "id", isKey: true, hidden: true}, "ID"), 
-                            React.createElement(TableHeaderColumn, {dataField: "market", width: "80", dataAlign: "left", dataSort: false, filterFormatted: true, dataFormat: enumFormatter, formatExtraData: markets, filter: { type: "SelectFilter", options: markets}}, "Market"), 
+                            React.createElement(TableHeaderColumn, {dataField: "market", width: "80", dataAlign: "left", dataSort: true, filterFormatted: true, dataFormat: enumFormatter, formatExtraData: markets, filter: { type: "SelectFilter", options: markets}}, "Market"), 
                             React.createElement(TableHeaderColumn, {dataField: "rule", dataAlign: "left", dataSort: true, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "Rule"), 
                             React.createElement(TableHeaderColumn, {dataField: "compliant", dataAlign: "left", dataSort: true, filter: { type: "NumberFilter", defaultValue: { comparator: '<=' }}}, "Compliant"), 
                             React.createElement(TableHeaderColumn, {dataField: "noncompliant", dataAlign: "left", dataSort: true, dataFormat: link, filter: { type: "NumberFilter", defaultValue: { comparator: '<=' }}}, "Non-Compliant"), 
@@ -51216,8 +51164,8 @@ var ReportAppMap2CIM = (function () {
                             React.createElement(TableHeaderColumn, {dataField: "id", isKey: true, hidden: true}, "ID"), 
                             React.createElement(TableHeaderColumn, {dataField: "appmapNameL1", dataAlign: "left", dataSort: true, dataFormat: linkL1, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "AppMap L1"), 
                             React.createElement(TableHeaderColumn, {dataField: "name", dataAlign: "left", dataSort: true, dataFormat: link, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "AppMap L2"), 
-                            React.createElement(TableHeaderColumn, {dataField: "refNameL1", dataAlign: "left", dataSort: true, dataFormat: linkRefL1, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "Platform L1"), 
-                            React.createElement(TableHeaderColumn, {dataField: "refNameL2", dataAlign: "left", dataSort: true, dataFormat: linkRefL2, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "Platform L2 ")
+                            React.createElement(TableHeaderColumn, {dataField: "refNameL1", dataAlign: "left", dataSort: true, dataFormat: linkRefL1, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "CIM L1"), 
+                            React.createElement(TableHeaderColumn, {dataField: "refNameL2", dataAlign: "left", dataSort: true, dataFormat: linkRefL2, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "CIM L2 ")
 
                         )
                     ),
@@ -51488,7 +51436,7 @@ var ReportCSMOperations = (function () {
                 var list = fsIndex.getSortedList('services');
                 var reportUtils = new ReportUtils();
 
-                var statusOptions = tagGroups['Service Operation Status'];
+                var statusOptions = tagGroups['Service Status'];
 
                 var output = [];
                 for (var i = 0; i < list.length; i++) {
@@ -51574,7 +51522,7 @@ var ReportCSMOperations = (function () {
                             React.createElement(TableHeaderColumn, {dataField: "hierarchyL0Name", width: "200", dataAlign: "left", dataFormat: linkL0, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "Service Domain"), 
                             React.createElement(TableHeaderColumn, {dataField: "hierarchyL1Name", width: "200", dataAlign: "left", dataFormat: linkL1, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "Service Name"), 
                             React.createElement(TableHeaderColumn, {dataField: "hierarchyL2Name", width: "200", dataAlign: "left", dataFormat: linkL2, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "Service Operation"), 
-                            React.createElement(TableHeaderColumn, {dataField: "description", width: "200", dataAlign: "left", dataFormat: linkL2, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "Service Operation Description"), 
+                            React.createElement(TableHeaderColumn, {dataField: "description", width: "200", dataAlign: "left", filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "Service Operation Description"), 
                             React.createElement(TableHeaderColumn, {dataField: "status", width: "200", dataAlign: "left", filter: { type: "SelectFilter", options: reportUtils.getLookup(statusOptions)}}, "Service Operation Status"), 
                             React.createElement(TableHeaderColumn, {dataField: "platformName", width: "200", dataAlign: "left", dataFormat: linkPlatform, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "Platform")
                         )
@@ -51636,7 +51584,7 @@ var ReportCSMServices = (function () {
                 var list = fsIndex.getSortedList('services');
                 var reportUtils = new ReportUtils();
 
-                var statusOptions = tagGroups['Service Operation Status'];
+                var statusOptions = tagGroups['Service Status'];
                 var serviceClassificationOptions = tagGroups['Service Classification'];
                 var serviceOriginOptions = tagGroups['Service Origin'];
 
@@ -51796,7 +51744,7 @@ var ReportCSMServices = (function () {
                             React.createElement(TableHeaderColumn, {dataField: "serviceClassification", width: "200", dataAlign: "left", filter: { type: "SelectFilter", options: reportUtils.getLookup(serviceClassificationOptions)}}, "Service Classification"), 
                             React.createElement(TableHeaderColumn, {dataField: "hierarchyL1Name", width: "200", dataAlign: "left", dataFormat: linkL1, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "Service Name"), 
                             React.createElement(TableHeaderColumn, {dataField: "serviceOrigin", width: "200", dataAlign: "left", filter: { type: "SelectFilter", options: reportUtils.getLookup(serviceOriginOptions)}}, "Service Origin"), 
-                            React.createElement(TableHeaderColumn, {dataField: "description", width: "200", dataAlign: "left", dataFormat: linkL2, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "Service Description"), 
+                            React.createElement(TableHeaderColumn, {dataField: "description", width: "200", dataAlign: "left", filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "Service Description"), 
                             React.createElement(TableHeaderColumn, {dataField: "status", width: "200", dataAlign: "left", filter: { type: "SelectFilter", options: reportUtils.getLookup(statusOptions)}}, "Service Status"), 
                             React.createElement(TableHeaderColumn, {dataField: "bcaName", width: "200", dataAlign: "left", dataFormat: linkBCA, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "BCA"), 
                             React.createElement(TableHeaderColumn, {dataField: "cimName", width: "200", dataAlign: "left", dataFormat: linkCIM, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "CIM"), 
