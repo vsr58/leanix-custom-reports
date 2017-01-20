@@ -48,7 +48,7 @@ var ReportCSMServices = (function () {
                 var list = fsIndex.getSortedList('services');
                 var reportUtils = new ReportUtils();
 
-                var statusOptions = tagGroups['Service Operation Status'];
+                var statusOptions = tagGroups['Service Status'];
                 var serviceClassificationOptions = tagGroups['Service Classification'];
                 var serviceOriginOptions = tagGroups['Service Origin'];
 
@@ -208,7 +208,7 @@ var ReportCSMServices = (function () {
                             <TableHeaderColumn dataField="serviceClassification" width="200" dataAlign="left" filter={{ type: "SelectFilter", options: reportUtils.getLookup(serviceClassificationOptions) }} >Service Classification</TableHeaderColumn>
                             <TableHeaderColumn dataField="hierarchyL1Name" width="200" dataAlign="left" dataFormat={linkL1} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>Service Name</TableHeaderColumn>
                             <TableHeaderColumn dataField="serviceOrigin" width="200" dataAlign="left" filter={{ type: "SelectFilter", options: reportUtils.getLookup(serviceOriginOptions) }} >Service Origin</TableHeaderColumn>
-                            <TableHeaderColumn dataField="description" width="200" dataAlign="left" dataFormat={linkL2} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>Service Description</TableHeaderColumn>
+                            <TableHeaderColumn dataField="description" width="200" dataAlign="left" filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>Service Description</TableHeaderColumn>
                             <TableHeaderColumn dataField="status" width="200" dataAlign="left" filter={{ type: "SelectFilter", options: reportUtils.getLookup(statusOptions) }} >Service Status</TableHeaderColumn>
                             <TableHeaderColumn dataField="bcaName" width="200" dataAlign="left" dataFormat={linkBCA} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>BCA</TableHeaderColumn>
                             <TableHeaderColumn dataField="cimName" width="200" dataAlign="left" dataFormat={linkCIM} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>CIM</TableHeaderColumn>

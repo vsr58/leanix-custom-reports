@@ -44,7 +44,7 @@ var ReportCSMOperations = (function () {
                 var list = fsIndex.getSortedList('services');
                 var reportUtils = new ReportUtils();
 
-                var statusOptions = tagGroups['Service Operation Status'];
+                var statusOptions = tagGroups['Service Status'];
 
                 var output = [];
                 for (var i = 0; i < list.length; i++) {
@@ -130,7 +130,7 @@ var ReportCSMOperations = (function () {
                             <TableHeaderColumn dataField="hierarchyL0Name" width="200" dataAlign="left" dataFormat={linkL0} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>Service Domain</TableHeaderColumn>
                             <TableHeaderColumn dataField="hierarchyL1Name" width="200" dataAlign="left" dataFormat={linkL1} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>Service Name</TableHeaderColumn>
                             <TableHeaderColumn dataField="hierarchyL2Name" width="200" dataAlign="left" dataFormat={linkL2} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>Service Operation</TableHeaderColumn>
-                            <TableHeaderColumn dataField="description" width="200" dataAlign="left" dataFormat={linkL2} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>Service Operation Description</TableHeaderColumn>
+                            <TableHeaderColumn dataField="description" width="200" dataAlign="left" filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>Service Operation Description</TableHeaderColumn>
                             <TableHeaderColumn dataField="status" width="200" dataAlign="left" filter={{ type: "SelectFilter", options: reportUtils.getLookup(statusOptions) }} >Service Operation Status</TableHeaderColumn>
                             <TableHeaderColumn dataField="platformName" width="200" dataAlign="left" dataFormat={linkPlatform} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>Platform</TableHeaderColumn>
                         </BootstrapTable>
