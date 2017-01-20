@@ -151,32 +151,6 @@ var ReportDataQuality = (function () {
                         'lifecycle[]=2&lifecycle[]=3&serviceHasProjects[]=na'
                     );
 
-                    rule = 'Adding applications, but project impact != adding';
-                    compliant[rule] = 0;
-                    noncompliant[rule] = 0;
-                    for (var i = 0; i < groupedByMarket[key].length; i++) {
-                        var service = groupedByMarket[key][i];
-
-                        if (hasActiveLifecycle(service)) {
-                            var c = false;
-                            for (var j = 0; j < service.serviceHasProjects.length; j++) {
-                                var serviceHasProject = service.serviceHasProjects[j];
-                                if (serviceHasProject && serviceHasProject.projectID) {
-                                    var proj = fsIndex.index.projects[serviceHasProject.projectID];
-                                    if (proj && serviceHasProject.projectImpactID == "1") {
-                                        c = true;
-                                    }
-                                    if (c) compliant[rule]++; else noncompliant[rule]++;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    pushToOutput(output, key, rule, compliant, noncompliant,
-                        'lifecycle[]=2&lifecycle[]=3&serviceHasProjects[]=na&serviceHasProjects_op=NOR'
-                    );
-
-
                     rule = 'Retiring applications, but no project';
                     compliant[rule] = 0;
                     noncompliant[rule] = 0;
@@ -200,32 +174,6 @@ var ReportDataQuality = (function () {
                     }
                     pushToOutput(output, key, rule, compliant, noncompliant,
                         'lifecycle[]=5&lifecycle_data=1995-01-01_to_2022-11-01&serviceHasProjects[]=na'
-                    );
-
-                    rule = 'Retiring applications, but project impact != retired';
-                    compliant[rule] = 0;
-                    noncompliant[rule] = 0;
-                    for (var i = 0; i < groupedByMarket[key].length; i++) {
-                        var service = groupedByMarket[key][i];
-
-                        if (isRetired(service)) {
-                            var c = false;
-                            for (var j = 0; j < service.serviceHasProjects.length; j++) {
-                                var serviceHasProject = service.serviceHasProjects[j];
-                                if (serviceHasProject && serviceHasProject.projectID) {
-                                    var proj = fsIndex.index.projects[serviceHasProject.projectID];
-                                    if (proj && serviceHasProject.projectImpactID == "3") {
-                                        c = true;
-                                    }
-                                    if (c) compliant[rule]++; else noncompliant[rule]++;
-                                    break;
-                                }
-                            }
-                            if (c) compliant[rule]++; else noncompliant[rule]++;
-                        }
-                    }
-                    pushToOutput(output, key, rule, compliant, noncompliant,
-                        'lifecycle[]=5&lifecycle_data=1995-01-01_to_2022-11-01&serviceHasProjects[]=na&serviceHasProjects_op=NOR'
                     );
 
                     rule = 'has COBRA';
@@ -255,20 +203,20 @@ var ReportDataQuality = (function () {
                     noncompliant[rule] = 0;
                     for (var i = 0; i < groupedByMarket[key].length; i++) {
                         if (reportUtils.getCurrentLifecycle(groupedByMarket[key][i]) && reportUtils.getCurrentLifecycle(groupedByMarket[key][i]).phaseID == 3) {
-                            if (reportUtils.getTagFromGroup(groupedByMarket[key][i], 'COTS Package')) 
+                            if (reportUtils.getTagFromGroup(groupedByMarket[key][i], 'COTS Package') || reportUtils.getTagFromGroup(groupedByMarket[key][i], 'Mo COTS Package')) 
                                 compliant[rule]++; 
                             else 
                                 noncompliant[rule]++;
                         }
                     }
                     pushToOutput(output, key, rule, compliant, noncompliant,
-                        'lifecycle[]=3&lifecycle_data=today&tags_cots_package[]=COTS+Package&tags_cots_package_op=NOR&serviceHasBusinessCapabilities_op=NOR&tags_service_type[]=Application');
+                        'lifecycle[]=3&lifecycle_data=today&tags_cots_package[]=COTS+Package&tags_cots_package[]=No+COTS+Package&tags_cots_package_op=NOR&serviceHasBusinessCapabilities_op=NOR&tags_service_type[]=Application');
 
                     rule = 'has Software Product';
                     compliant[rule] = 0;
                     noncompliant[rule] = 0;
                     for (var i = 0; i < groupedByMarket[key].length; i++) {
-                        if (reportUtils.getCurrentLifecycle(groupedByMarket[key][i]) && reportUtils.getCurrentLifecycle(groupedByMarket[key][i]).phaseID == 3) {
+                        if (reportUtils.getTagFromGroup(groupedByMarket[key][i], 'COTS Package') && reportUtils.getCurrentLifecycle(groupedByMarket[key][i]) && reportUtils.getCurrentLifecycle(groupedByMarket[key][i]).phaseID == 3) {
                             var c = false;
                             for (var z = 0; z < groupedByMarket[key][i].serviceHasResources.length; z++) {
                                 var tmp = groupedByMarket[key][i].serviceHasResources[z];
@@ -284,7 +232,7 @@ var ReportDataQuality = (function () {
                         }
                     }
                     pushToOutput(output, key, rule, compliant, noncompliant,
-                        'lifecycle[]=3&lifecycle_data=today&serviceHasSoftware[]=na');
+                        'lifecycle[]=3&lifecycle_data=today&tags_cots_package[]=COTS+Package&serviceHasSoftware[]=na');
 
                     rule = 'has Description';
                     compliant[rule] = 0;
@@ -457,7 +405,7 @@ var ReportDataQuality = (function () {
                     <div className="report-data-quality">
                         <BootstrapTable data={output} striped={false} hover={true} search={true} condensed={true} exportCSV={true}>
                             <TableHeaderColumn dataField="id" isKey={true} hidden={true}>ID</TableHeaderColumn>
-                            <TableHeaderColumn dataField="market" width="80" dataAlign="left" dataSort={false} filterFormatted dataFormat={enumFormatter} formatExtraData={markets} filter={{ type: "SelectFilter", options: markets }}>Market</TableHeaderColumn>
+                            <TableHeaderColumn dataField="market" width="80" dataAlign="left" dataSort={true} filterFormatted dataFormat={enumFormatter} formatExtraData={markets} filter={{ type: "SelectFilter", options: markets }}>Market</TableHeaderColumn>
                             <TableHeaderColumn dataField="rule" dataAlign="left" dataSort={true} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>Rule</TableHeaderColumn>
                             <TableHeaderColumn dataField="compliant" dataAlign="left" dataSort={true} filter={{ type: "NumberFilter", defaultValue: { comparator: '<=' } }}>Compliant</TableHeaderColumn>
                             <TableHeaderColumn dataField="noncompliant" dataAlign="left" dataSort={true} dataFormat={link} filter={{ type: "NumberFilter", defaultValue: { comparator: '<=' } }}>Non-Compliant</TableHeaderColumn>
