@@ -51147,6 +51147,7 @@ var ReportAppMap2CIM = (function () {
             + '&filterAttributes[]=displayName'
             + '&filterAttributes[]=ID'
             + '&filterAttributes[]=fullName'
+            + '&filterAttributes[]=parentID'
             + '&filterAttributes[]=resourceType'
             + '&filterAttributes[]=tags'
         )
@@ -51168,37 +51169,57 @@ var ReportAppMap2CIM = (function () {
                             var factSheetHasRequires = list[i].factSheetHasRequires[z];
                             if (factSheetHasRequires && factSheetHasRequires.factSheetRefID) {
                                 var refBO = fsIndex.index.businessObjects[factSheetHasRequires.factSheetRefID];
+
                                 if (refBO) {
+                                    var refBOL1 = fsIndex.getParent('businessObjects', refBO.ID);
+                                    var appmapL1 = fsIndex.getParent('businessCapabilities', list[i].ID);
 
                                     output.push({
                                         name: list[i].fullName,
                                         id: list[i].ID,
-                                        refName: refBO.fullName,
-                                        refId: refBO.ID
+                                        appmapNameL1: appmapL1 ? appmapL1.fullName : '',
+                                        appmapIdL1: appmapL1 ? appmapL1.ID : '',
+                                        refNameL2: refBO.fullName,
+                                        refIdL2: refBO.ID,
+                                        refNameL1: refBOL1 ? refBOL1.fullName : '',
+                                        refIdL1: refBOL1 ? refBOL1.ID : '',
                                     });
+
                                 }
                             }
-                        }    
+                        }
                     }
                 }
 
 
-                function link(cell, row) {
+                 function link(cell, row) {
                     return '<a href="' + that.reportSetup.baseUrl + '/businessCapabilities/' + row.id + '" target="_blank">' + cell + '</a>';
                 }
+                function linkL1(cell, row) {
+                    return '<a href="' + that.reportSetup.baseUrl + '/businessCapabilities/' + row.appmapIdL1 + '" target="_blank">' + cell + '</a>';
+                }
 
-                function linkRef(cell, row) {
-                    if (row.refId)
-                        return '<a href="' + that.reportSetup.baseUrl + '/businessObjects/' + row.refId + '" target="_blank">' + cell + '</a>';
+                function linkRefL1(cell, row) {
+                    return linkRef(cell, row.refIdL1);
+                }
+                function linkRefL2(cell, row) {
+                    return linkRef(cell, row.refIdL2);
+                }
+                function linkRef(cell, id) {
+                    if (id)
+                        return '<a href="' + that.reportSetup.baseUrl + '/businessCapabilities/' + id + '" target="_blank">' + cell + '</a>';
                 }
 
                 ReactDOM.render(
                     React.createElement("div", null, 
                         React.createElement(BootstrapTable, {data: output, striped: true, hover: true, search: true, pagination: true, exportCSV: true}, 
                             React.createElement(TableHeaderColumn, {dataField: "id", isKey: true, hidden: true}, "ID"), 
-                            React.createElement(TableHeaderColumn, {dataField: "name", dataAlign: "left", dataSort: true, dataFormat: link, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "Application Map"), 
-                            React.createElement(TableHeaderColumn, {dataField: "refName", dataAlign: "left", dataSort: true, dataFormat: linkRef, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "CIM")
-                         )
+                            React.createElement(TableHeaderColumn, {dataField: "appmapNameL1", dataAlign: "left", dataSort: true, dataFormat: linkL1, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "AppMap L1"), 
+                            React.createElement(TableHeaderColumn, {dataField: "name", dataAlign: "left", dataSort: true, dataFormat: link, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "AppMap L2"), 
+                            React.createElement(TableHeaderColumn, {dataField: "refNameL1", dataAlign: "left", dataSort: true, dataFormat: linkRefL1, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "Platform L1"), 
+                            React.createElement(TableHeaderColumn, {dataField: "refNameL2", dataAlign: "left", dataSort: true, dataFormat: linkRefL2, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "Platform L2 ")
+
+                        )
                     ),
                     document.getElementById("app")
                 );
