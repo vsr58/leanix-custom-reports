@@ -103,7 +103,7 @@ var ReportDataQuality = (function () {
                 for (var i = 0; i < list.length; i++) {
                     var service = list[i];
                     if (service.tags.indexOf('Application') != -1 && service.tags.indexOf('IT') != -1) {
-                        
+
                         for (var z = 0; z < service.serviceHasConsumers.length; z++) {
                             var tmp = service.serviceHasConsumers[z];
                             if (tmp) {
@@ -125,7 +125,7 @@ var ReportDataQuality = (function () {
                 for (var key in groupedByMarket) {
                     var compliant = [];
                     var noncompliant = [];
-                    
+
                     rule = 'Adding applications, but no project';
                     compliant[rule] = 0;
                     noncompliant[rule] = 0;
@@ -203,9 +203,9 @@ var ReportDataQuality = (function () {
                     noncompliant[rule] = 0;
                     for (var i = 0; i < groupedByMarket[key].length; i++) {
                         if (reportUtils.getCurrentLifecycle(groupedByMarket[key][i]) && reportUtils.getCurrentLifecycle(groupedByMarket[key][i]).phaseID == 3) {
-                            if (reportUtils.getTagFromGroup(groupedByMarket[key][i], 'COTS Package') || reportUtils.getTagFromGroup(groupedByMarket[key][i], 'Mo COTS Package')) 
-                                compliant[rule]++; 
-                            else 
+                            if (reportUtils.getTagFromGroup(groupedByMarket[key][i], 'COTS Package') || reportUtils.getTagFromGroup(groupedByMarket[key][i], 'Mo COTS Package'))
+                                compliant[rule]++;
+                            else
                                 noncompliant[rule]++;
                         }
                     }
@@ -233,6 +233,32 @@ var ReportDataQuality = (function () {
                     }
                     pushToOutput(output, key, rule, compliant, noncompliant,
                         'lifecycle[]=3&lifecycle_data=today&tags_cots_package[]=COTS+Package&serviceHasSoftware[]=na');
+
+                    rule = 'has Software Product Placeholder';
+                    compliant[rule] = 0;
+                    noncompliant[rule] = 0;
+                    for (var i = 0; i < groupedByMarket[key].length; i++) {
+                        if (reportUtils.getTagFromGroup(groupedByMarket[key][i], 'COTS Package') && reportUtils.getCurrentLifecycle(groupedByMarket[key][i]) && reportUtils.getCurrentLifecycle(groupedByMarket[key][i]).phaseID == 3) {
+                            var c = false;
+                            for (var z = 0; z < groupedByMarket[key][i].serviceHasResources.length; z++) {
+                                var tmp = groupedByMarket[key][i].serviceHasResources[z];
+                                if (tmp && tmp.resourceID) {
+                                    var resource = fsIndex.index.resources[tmp.resourceID];
+                                    if (resource && resource.objectCategoryID == 1) {
+                                        if (resource.tags.indexOf('Placeholder') != -1) {
+                                            noncompliant[rule]++;
+                                        } else {
+                                            compliant[rule]++;
+                                        }
+                                    }
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    pushToOutput(output, key, rule, compliant, noncompliant,
+                        'lifecycle[]=3&lifecycle_data=today&tags_cots_package[]=COTS+Package&serviceHasSoftware[]=tag-' + tagIDs['Placeholder']);
+
 
                     rule = 'has Description';
                     compliant[rule] = 0;
@@ -330,9 +356,9 @@ var ReportDataQuality = (function () {
                     noncompliant[rule] = 0;
                     for (var i = 0; i < groupedByMarket[key].length; i++) {
                         if (reportUtils.getCurrentLifecycle(groupedByMarket[key][i]) && reportUtils.getCurrentLifecycle(groupedByMarket[key][i]).phaseID == 3) {
-                            if (reportUtils.getTagFromGroup(groupedByMarket[key][i], tagGroups['CostCentre'])) 
-                                compliant[rule]++; 
-                            else 
+                            if (reportUtils.getTagFromGroup(groupedByMarket[key][i], tagGroups['CostCentre']))
+                                compliant[rule]++;
+                            else
                                 noncompliant[rule]++;
                         }
                     }

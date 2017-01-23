@@ -272,7 +272,7 @@ var ReportApplicationPortfolio = (function () {
 
                         output.push({
                             name: list[i].displayName,
-                            description: list[i].description.replace(/(?:\r\n|\r|\n)/g, ' '),
+                            description: list[i].description.replace(/(?:\r\n|\r|\n|;|,)/g, ' ').replace(/(?:')/g, ' '),
                             cobraId: cobras.length ? cobras[0].id : '',
                             cobraName: cobras.length ? cobras[0].name : '',
                             id: list[i].ID,
@@ -298,7 +298,7 @@ var ReportApplicationPortfolio = (function () {
                             businessCriticality: list[i].businessCriticalityID ? businessCriticality[list[i].businessCriticalityID] : '',
                             deployment: getTagFromGroup(list[i], deployments),
                             alias: list[i].alias,
-                            reference: list[i].reference,
+                            reference: list[i].reference.replace(/(?:;)/g, ' '),
                             soxpciFlag: getTagFromGroup(list[i], soxpciFlags),
                             itOwner: itOwner ? users[itOwner] : '',
                             businessOwner: businessOwner ? users[businessOwner] : '',
@@ -345,8 +345,8 @@ var ReportApplicationPortfolio = (function () {
                     <div>
                         <BootstrapTable data={output} striped={true} hover={true} search={true} pagination={true} exportCSV={true}>
                             <TableHeaderColumn dataField="id" isKey={true} hidden={true}>ID</TableHeaderColumn>
-                            <TableHeaderColumn dataField="name" width="150" dataAlign="left" dataSort={true} dataFormat={link} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>Application Name</TableHeaderColumn>
-                            <TableHeaderColumn dataField="description" width="150" dataAlign="left" dataSort={true} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>Description</TableHeaderColumn>
+                            <TableHeaderColumn dataField="name" width="250" dataAlign="left" dataSort={true} dataFormat={link} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>Application Name</TableHeaderColumn>
+                            <TableHeaderColumn dataField="description" width="250" dataAlign="left" dataSort={true} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>Description</TableHeaderColumn>
                             <TableHeaderColumn dataField="cobraName" width="150" dataAlign="left" dataSort={true} dataFormat={linkBC} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>COBRA</TableHeaderColumn>
                             <TableHeaderColumn dataField="lifecyclePhase" width="100" dataAlign="left" dataSort={true} filter={{ type: "SelectFilter", options: getLookup(lifecycleArray) }}>Phase</TableHeaderColumn>
                             <TableHeaderColumn dataField="golive" width="150" dataAlign="left" dataSort={true} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>Go Live Date</TableHeaderColumn>
