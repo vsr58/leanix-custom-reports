@@ -78,10 +78,10 @@ var ReportAppMap2Platforms = (function () {
                     <div>
                         <BootstrapTable data={output} striped={true} hover={true} search={true} pagination={true} exportCSV={true}>
                             <TableHeaderColumn dataField="id" isKey={true} hidden={true}>ID</TableHeaderColumn>
-                            <TableHeaderColumn dataField="appmapNameL1" dataAlign="left" dataSort={true} dataFormat={linkL1} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>AppMap L1</TableHeaderColumn>
-                            <TableHeaderColumn dataField="name" dataAlign="left" dataSort={true} dataFormat={link} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>AppMap L2</TableHeaderColumn>
-                            <TableHeaderColumn dataField="refNameL1" dataAlign="left" dataSort={true} dataFormat={linkRefL1} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>Platform L1</TableHeaderColumn>
-                            <TableHeaderColumn dataField="refNameL2" dataAlign="left" dataSort={true} dataFormat={linkRefL2} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>Platform L2 </TableHeaderColumn>
+                            <TableHeaderColumn dataField="appmapNameL1" dataAlign="left" dataSort={true} dataFormat={linkL1} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>AppMap Domain</TableHeaderColumn>
+                            <TableHeaderColumn dataField="name" dataAlign="left" dataSort={true} dataFormat={link} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>AppMap Solution Area</TableHeaderColumn>
+                            <TableHeaderColumn dataField="refNameL1" dataAlign="left" dataSort={true} dataFormat={linkRefL1} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>Platform Layer</TableHeaderColumn>
+                            <TableHeaderColumn dataField="refNameL2" dataAlign="left" dataSort={true} dataFormat={linkRefL2} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>Platform</TableHeaderColumn>
                         </BootstrapTable>
                     </div>,
                     document.getElementById("app")
