@@ -88,11 +88,19 @@ var ReportDataQuality = (function () {
                     businessValueOptions.push(businessValue[key]);
                 }
 
-
                 var output = [];
                 var markets = {};
 
                 var groupedByMarket = {};
+
+                var oneYearBefore = new Date();
+                oneYearBefore.setFullYear(oneYearBefore.getFullYear() - 1);
+
+            var day = '' + oneYearBefore.getDate();
+                if (day.length < 2) day = '0' + day;
+            var month = '' + (oneYearBefore.getMonth() + 1);
+                if (month.length < 2)month = '0' + month;
+                var oneYearBeforeStr = oneYearBefore.getFullYear() + "_" + month + "_" + day;
 
                 function getGreenToRed(percent) {
                     var r = percent < 50 ? 255 : Math.floor(255 - (percent * 2 - 100) * 255 / 100);
@@ -104,19 +112,23 @@ var ReportDataQuality = (function () {
                     var service = list[i];
                     if (service.tags.indexOf('Application') != -1 && service.tags.indexOf('IT') != -1) {
 
-                        for (var z = 0; z < service.serviceHasConsumers.length; z++) {
-                            var tmp = service.serviceHasConsumers[z];
-                            if (tmp) {
-                                if (tmp.consumerID && fsIndex.index.consumers[tmp.consumerID]) {
+                        // Extract market
+                        var re = /^([A-Z]{2,3})_/;
+                        var market = '';
 
-                                    if (!(tmp.consumerID in groupedByMarket)) {
-                                        groupedByMarket[tmp.consumerID] = [];
-                                        var market = fsIndex.index.consumers[tmp.consumerID].displayName;
-                                        markets[market] = market;
-                                    }
-
-                                    groupedByMarket[tmp.consumerID].push(service);
+                        if ((m = re.exec(list[i].displayName)) !== null) {
+                            if (m.index === re.lastIndex) {
+                                re.lastIndex++;
+                            }
+                            // View your result using the m-variable.
+                            market = m[1];
+                            if (market) {
+                                if (!(market in groupedByMarket)) {
+                                    groupedByMarket[market] = [];
+                                    markets[market] = market;
                                 }
+                                groupedByMarket[market].push(service);
+
                             }
                         }
                     }
@@ -132,7 +144,7 @@ var ReportDataQuality = (function () {
                     for (var i = 0; i < groupedByMarket[key].length; i++) {
                         var service = groupedByMarket[key][i];
 
-                        if (hasActiveLifecycle(service)) {
+                        if (hasActiveLifecycle(service, oneYearBefore)) {
                             var c = false;
                             for (var j = 0; j < service.serviceHasProjects.length; j++) {
                                 var serviceHasProject = service.serviceHasProjects[j];
@@ -148,7 +160,7 @@ var ReportDataQuality = (function () {
                         }
                     }
                     pushToOutput(output, key, rule, compliant, noncompliant,
-                        'lifecycle[]=2&lifecycle[]=3&serviceHasProjects[]=na'
+                        'lifecycle[]=2&lifecycle[]=3&lifecycle_data=' + oneYearBeforeStr + '_to_' + oneYearBeforeStr + '&lifecycle_op=OR&serviceHasProjects[]=na'
                     );
 
                     rule = 'Retiring applications, but no project';
@@ -157,7 +169,7 @@ var ReportDataQuality = (function () {
                     for (var i = 0; i < groupedByMarket[key].length; i++) {
                         var service = groupedByMarket[key][i];
 
-                        if (isRetired(service)) {
+                        if (isRetired(service, oneYearBefore)) {
                             var c = false;
                             for (var j = 0; j < service.serviceHasProjects.length; j++) {
                                 var serviceHasProject = service.serviceHasProjects[j];
@@ -173,7 +185,7 @@ var ReportDataQuality = (function () {
                         }
                     }
                     pushToOutput(output, key, rule, compliant, noncompliant,
-                        'lifecycle[]=5&lifecycle_data=1995-01-01_to_2022-11-01&serviceHasProjects[]=na'
+                        'lifecycle[]=5&lifecycle_data=' + oneYearBeforeStr + '_to_' + oneYearBeforeStr + '&lifecycle_op=OR&serviceHasProjects[]=na'
                     );
 
                     rule = 'has COBRA';
@@ -378,20 +390,20 @@ var ReportDataQuality = (function () {
 
                 }
 
-                function hasActiveLifecycle(service) {
+                function hasActiveLifecycle(service, oneYearBefore) {
                     var hasActiveLifecycle = false;
 
                     var current = reportUtils.getCurrentLifecycle(service);
-                    if (current && current.phaseID > 1 && current.phaseID < 4) {
+                    if (current && current.phaseID > 1 && current.phaseID < 4 && current.date > oneYearBefore) {
                         hasActiveLifecycle = true;
                     }
                     return hasActiveLifecycle;
                 }
 
-                function isRetired(service) {
+                function isRetired(service, oneYearBefore) {
                     var isRetired = false;
                     for (var j = 0; j < service.factSheetHasLifecycles.length; j++) {
-                        if (service.factSheetHasLifecycles[j].lifecycleStateID == 5) {
+                        if (service.factSheetHasLifecycles[j].lifecycleStateID == 5 && Date.parse(service.factSheetHasLifecycles[j].startDate) > oneYearBefore) {
                             isRetired = true;
                             break;
                         }
@@ -403,35 +415,44 @@ var ReportDataQuality = (function () {
                     output.push({
                         rule: rule,
                         id: key,
-                        market: fsIndex.index.consumers[key] ? fsIndex.index.consumers[key].displayName : '',
+                        market: key,
                         compliant: compliant[rule],
                         noncompliant: noncompliant[rule],
                         percentage: 100 - Math.floor(noncompliant[rule] / (compliant[rule] + noncompliant[rule]) * 100),
-                        url: url ? 'type=10&serviceHasConsumers[]=' + key + '&tags_costcentre[]=IT&' + url : ''
+                        url: url ? 'type=10&filter=' + key + '_&tags_costcentre[]=IT&' + url : ''
                     });
 
                 }
 
                 function link(cell, row) {
-                    if (row.url)
-                        return '<a href="' + that.reportSetup.baseUrl + '/inventory?' + row.url + '" target="_blank">' + cell + '</a>';
+                    if (row.url) {
+                        if (row.noncompliant == 0) {
+                            return cell;
+                        } else {
+                            return '<a href="' + that.reportSetup.baseUrl + '/inventory?' + row.url + '" target="_blank">' + cell + '</a>';
+                        }
+                    }
                     else return cell;
                 }
+
+                function linkMarket(cell, row) {
+                    if (row.market)
+                        return '<a href="' + that.reportSetup.baseUrl + '/inventory?type=10&filter=' + row.market + '_" target="_blank">' + cell + '</a>';
+                }
+
 
 
                 function percentage(cell, row) {
                     return '<div class="percentage" style="background-color: ' + getGreenToRed(cell) + ';">' + cell + ' %</div>';
                 }
 
-                function enumFormatter(cell, row, enumObject) {
-                    return enumObject[cell];
-                }
+
 
                 ReactDOM.render(
                     <div className="report-data-quality">
                         <BootstrapTable data={output} striped={false} hover={true} search={true} condensed={true} exportCSV={true}>
                             <TableHeaderColumn dataField="id" isKey={true} hidden={true}>ID</TableHeaderColumn>
-                            <TableHeaderColumn dataField="market" width="80" dataAlign="left" dataSort={true} filterFormatted dataFormat={enumFormatter} formatExtraData={markets} filter={{ type: "SelectFilter", options: markets }}>Market</TableHeaderColumn>
+                            <TableHeaderColumn dataField="market" width="80" dataAlign="left" dataSort={true} filterFormatted dataFormat={linkMarket} formatExtraData={markets} filter={{ type: "SelectFilter", options: markets }}>Market</TableHeaderColumn>
                             <TableHeaderColumn dataField="rule" dataAlign="left" dataSort={true} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>Rule</TableHeaderColumn>
                             <TableHeaderColumn dataField="compliant" dataAlign="left" dataSort={true} filter={{ type: "NumberFilter", defaultValue: { comparator: '<=' } }}>Compliant</TableHeaderColumn>
                             <TableHeaderColumn dataField="noncompliant" dataAlign="left" dataSort={true} dataFormat={link} filter={{ type: "NumberFilter", defaultValue: { comparator: '<=' } }}>Non-Compliant</TableHeaderColumn>
