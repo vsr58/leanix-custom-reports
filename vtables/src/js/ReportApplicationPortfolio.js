@@ -100,9 +100,8 @@ var ReportApplicationPortfolio = (function () {
                 var projectTypes = {};
 
                 var costCentres = tagGroups['CostCentre'];
+                var stacks = tagGroups['Stack'];
                 var deployments = tagGroups['Deployment'];
-                var customisations = tagGroups['Customisation Level'];
-                var complexities = tagGroups['Application Complexity'];
                 var cotsPackages = tagGroups['COTS Package'];
                 var soxpciFlags = tagGroups['SOX / PCI'];
                 var recommendations = tagGroups['Recommendation'];
@@ -143,6 +142,40 @@ var ReportApplicationPortfolio = (function () {
                 for (var key in businessCriticality) {
                     businessCriticalityOptions.push(businessCriticality[key]);
                 }
+
+                var customisations = {
+                    "High Customisation": "High",
+                    "Medium Customisation": "Medium",
+                    "Low Customisation": "Low"
+                };
+                var customisationOptions = [];
+                for (var key in customisations) {
+                    customisationOptions.push(customisations[key]);
+                }
+
+                var complexities = {
+                    "Complexity: 1-Low": "1-Low",
+                    "Complexity: 2-Low/Med": "2-Low/Med",
+                    "Complexity: 3-Med": "3-Med",
+                    "Complexity: 4-Med/High": "4-Med/High",
+                    "Complexity: 5-High": "5-High"
+                };
+                var complexityOptions = [];
+                for (var key in complexities) {
+                    complexityOptions.push(complexities[key]);
+                }
+
+                var usages = {
+                    "Usage: 1-Low": "1-Low",
+                    "Usage: 2-Low/Med": "2-Low/Med",
+                    "Usage: 3-Med/High": "3-Med/High",
+                    "Usage: 4-High": "4-High"
+                };
+                var usageOptions = [];
+                for (var key in usages) {
+                    usageOptions.push(usages[key]);
+                }
+
                 var lifecycleArray = reportUtils.lifecycleArray();
 
 
@@ -179,9 +212,9 @@ var ReportApplicationPortfolio = (function () {
                                     } else if (resource.objectCategoryID == 3) {
                                         if (resource.tags.indexOf('Development Technology') != -1) {
                                             if (resource.name.endsWith('(Back End)')) {
-                                                backend.push(resource.displayName);
+                                                backend.push(resource.displayName.replace(' (Back End)', ''));
                                             } else {
-                                                frontend.push(resource.displayName);
+                                                frontend.push(resource.displayName.replace(' (Front End)', ''));
                                             }
                                         } else {
                                             support.push({
@@ -264,9 +297,9 @@ var ReportApplicationPortfolio = (function () {
                         var cotsSoftwareID = '';
                         var cotsVendor = '';
                         if (resources.length) {
-                            cotsSoftware = resources[0].name.endsWith('Software Product') ? '' : resources[0].displayName;
-                            cotsSoftwareID = resources[0].id;
                             cotsVendor = resources[0].displayName.substring(0, resources[0].displayName.search(resources[0].name));
+                            cotsSoftware = resources[0].name.endsWith('Software Product') ? '' : resources[0].displayName.substring(cotsVendor.length);
+                            cotsSoftwareID = resources[0].id;
                         }
 
 
@@ -281,6 +314,7 @@ var ReportApplicationPortfolio = (function () {
                             retired: retired ? retired.startDate : '',
                             market: market,
                             costCentre: getTagFromGroup(list[i], costCentres),
+                            stack: getTagFromGroup(list[i], stacks),
                             admScope: getTagFromGroup(list[i], 'AD&M Scope') ? 'Yes' : 'No',
                             cotsPackage: getTagFromGroup(list[i], 'COTS Package'),
                             cotsSoftware: cotsSoftware,
@@ -291,14 +325,16 @@ var ReportApplicationPortfolio = (function () {
                             supportName: support.length ? support[0].name : '',
                             lastUpgrade: getTagFromGroup(list[i], lastUpgrades),
 
-                            customisation: getTagFromGroup(list[i], customisations),
+                            customisation: getTagFromGroup(list[i], tagGroups['Customisation Level']) ? customisations[getTagFromGroup(list[i], tagGroups['Customisation Level'])] : '',
                             businessValue: list[i].functionalSuitabilityID ? businessValue[list[i].functionalSuitabilityID] : '',
                             technicalCondition: list[i].technicalSuitabilityID ? technicalCondition[list[i].technicalSuitabilityID] : '',
-                            complexity: getTagFromGroup(list[i], complexities),
+                            complexity: getTagFromGroup(list[i], tagGroups['Application Complexity']) ? complexities[getTagFromGroup(list[i], tagGroups['Application Complexity'])] : '',
                             businessCriticality: list[i].businessCriticalityID ? businessCriticality[list[i].businessCriticalityID] : '',
+                            usage: getTagFromGroup(list[i], tagGroups['Application Usage']) ? usages[getTagFromGroup(list[i], tagGroups['Application Usage'])] : '',
+                         
                             deployment: getTagFromGroup(list[i], deployments),
-                            alias: list[i].alias,
-                            reference: list[i].reference.replace(/(?:;)/g, ' '),
+                            alias: list[i].alias ? list[i].alias : '',
+                            externalID: list[i].reference.replace(/(?:;)/g, ' '),
                             soxpciFlag: getTagFromGroup(list[i], soxpciFlags),
                             itOwner: itOwner ? users[itOwner] : '',
                             businessOwner: businessOwner ? users[businessOwner] : '',
@@ -306,7 +342,6 @@ var ReportApplicationPortfolio = (function () {
                             operationsOwner: operationsOwner ? users[operationsOwner] : '',
 
                             recommendation: getTagFromGroup(list[i], recommendations),
-                            usage: getTagFromGroup(list[i], usages),
                             accessType: getTagFromGroup(list[i], accessTypes),
                             usedByMarkets: usedByMarkets.join(','),
                             usedBySegments: usedBySegments.join(','),
@@ -345,15 +380,16 @@ var ReportApplicationPortfolio = (function () {
                     <div>
                         <BootstrapTable data={output} striped={true} hover={true} search={true} pagination={true} exportCSV={true}>
                             <TableHeaderColumn dataField="id" isKey={true} hidden={true}>ID</TableHeaderColumn>
-                            <TableHeaderColumn dataField="name" width="250" dataAlign="left" dataSort={true} dataFormat={link} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>Application Name</TableHeaderColumn>
-                            <TableHeaderColumn dataField="description" width="250" dataAlign="left" dataSort={true} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>Description</TableHeaderColumn>
-                            <TableHeaderColumn dataField="cobraName" width="150" dataAlign="left" dataSort={true} dataFormat={linkBC} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>COBRA</TableHeaderColumn>
+                            <TableHeaderColumn dataField="name" width="300" dataAlign="left" dataSort={true} dataFormat={link} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>Application Name</TableHeaderColumn>
+                            <TableHeaderColumn dataField="description" width="300" dataAlign="left" dataSort={true} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>Description</TableHeaderColumn>
+                            <TableHeaderColumn dataField="cobraName" width="300" dataAlign="left" dataSort={true} dataFormat={linkBC} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>COBRA</TableHeaderColumn>
                             <TableHeaderColumn dataField="lifecyclePhase" width="100" dataAlign="left" dataSort={true} filter={{ type: "SelectFilter", options: getLookup(lifecycleArray) }}>Phase</TableHeaderColumn>
                             <TableHeaderColumn dataField="golive" width="150" dataAlign="left" dataSort={true} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>Go Live Date</TableHeaderColumn>
                             <TableHeaderColumn dataField="retired" width="150" dataAlign="left" dataSort={true} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>Retired Date</TableHeaderColumn>
                             <TableHeaderColumn dataField="recommendation" width="100" dataAlign="left" dataSort={true} filter={{ type: "SelectFilter", options: getLookup(recommendations) }}>Recommendation</TableHeaderColumn>
                             <TableHeaderColumn dataField="market" width="80" dataAlign="left" dataSort={true} filter={{ type: "SelectFilter", options: markets }}>Market</TableHeaderColumn>
                             <TableHeaderColumn dataField="costCentre" width="120" dataAlign="left" dataSort={true} filter={{ type: "SelectFilter", options: getLookup(costCentres) }}>Cost Centre</TableHeaderColumn>
+                            <TableHeaderColumn dataField="stack" width="120" dataAlign="left" dataSort={true} filter={{ type: "SelectFilter", options: getLookup(stacks) }}>Stack</TableHeaderColumn>
                             <TableHeaderColumn dataField="admScope" width="120" dataAlign="left" dataSort={true} filter={{ type: "SelectFilter", options: getLookup(['Yes', 'No']) }}>In AD&M Scope</TableHeaderColumn>
                             <TableHeaderColumn dataField="cotsPackage" width="120" dataAlign="left" dataSort={true} filter={{ type: "SelectFilter", options: getLookup(cotsPackages) }}>COTS Package</TableHeaderColumn>
                             <TableHeaderColumn dataField="cotsSoftware" width="200" dataAlign="left" dataSort={true} dataFormat={linkResource} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>COTS Software</TableHeaderColumn>
@@ -362,20 +398,20 @@ var ReportApplicationPortfolio = (function () {
 
                             <TableHeaderColumn dataField="remedyName" width="150" dataAlign="left" dataSort={true} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>Remedy Business Service</TableHeaderColumn>
                             <TableHeaderColumn dataField="supportName" width="150" dataAlign="left" dataSort={true} dataFormat={linkSupport} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>Supported By</TableHeaderColumn>
-                            <TableHeaderColumn dataField="customisation" width="120" dataAlign="left" dataSort={true} filter={{ type: "SelectFilter", options: getLookup(customisations) }}>Level of Customisation</TableHeaderColumn>
+                            <TableHeaderColumn dataField="customisation" width="120" dataAlign="left" dataSort={true} filter={{ type: "SelectFilter", options: getLookup(customisationOptions) }}>Level of Customisation</TableHeaderColumn>
                             <TableHeaderColumn dataField="businessValue" width="120" dataAlign="left" dataSort={true} filter={{ type: "SelectFilter", options: getLookup(businessValueOptions) }}>Business Value</TableHeaderColumn>
                             <TableHeaderColumn dataField="technicalCondition" width="120" dataAlign="left" dataSort={true} filter={{ type: "SelectFilter", options: getLookup(technicalConditionOptions) }}>Technical Condition</TableHeaderColumn>
-                            <TableHeaderColumn dataField="complexity" width="120" dataAlign="left" dataSort={true} filter={{ type: "SelectFilter", options: getLookup(complexities) }}>Application Complexity</TableHeaderColumn>
+                            <TableHeaderColumn dataField="complexity" width="120" dataAlign="left" dataSort={true} filter={{ type: "SelectFilter", options: getLookup(complexityOptions) }}>Application Complexity</TableHeaderColumn>
                             <TableHeaderColumn dataField="businessCriticality" width="120" dataAlign="left" dataSort={true} filter={{ type: "SelectFilter", options: getLookup(businessCriticalityOptions) }}>Business Criticality</TableHeaderColumn>
+                            <TableHeaderColumn dataField="usage" width="100" dataAlign="left" dataSort={true} filter={{ type: "SelectFilter", options: getLookup(usageOptions) }}>Application Usage</TableHeaderColumn>
                             <TableHeaderColumn dataField="alias" width="100" dataAlign="left" dataSort={true} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>Alternate names</TableHeaderColumn>
-                            <TableHeaderColumn dataField="reference" width="100" dataAlign="left" dataSort={true} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>External ID</TableHeaderColumn>
+                            <TableHeaderColumn dataField="externalID" width="100" dataAlign="left" dataSort={true} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>External ID</TableHeaderColumn>
                             <TableHeaderColumn dataField="deployment" width="100" dataAlign="left" dataSort={true} filter={{ type: "SelectFilter", options: getLookup(deployments) }}>Deployment</TableHeaderColumn>
                             <TableHeaderColumn dataField="soxpciFlag" width="100" dataAlign="left" dataSort={true} filter={{ type: "SelectFilter", options: getLookup(soxpciFlags) }}>SOX / PCI</TableHeaderColumn>
                             <TableHeaderColumn dataField="itOwner" width="150" dataAlign="left" dataSort={true} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>IT Owner</TableHeaderColumn>
                             <TableHeaderColumn dataField="businessOwner" width="150" dataAlign="left" dataSort={true} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>Business Owner</TableHeaderColumn>
                             <TableHeaderColumn dataField="spoc" width="150" dataAlign="left" dataSort={true} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>SPOC</TableHeaderColumn>
                             <TableHeaderColumn dataField="operationsOwner" width="150" dataAlign="left" dataSort={true} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>Operations Owner</TableHeaderColumn>
-                            <TableHeaderColumn dataField="usage" width="100" dataAlign="left" dataSort={true} filter={{ type: "SelectFilter", options: getLookup(usages) }}>Application Usage</TableHeaderColumn>
                             <TableHeaderColumn dataField="accessType" width="100" dataAlign="left" dataSort={true} filter={{ type: "SelectFilter", options: getLookup(accessTypes) }}>Access Type</TableHeaderColumn>
                             <TableHeaderColumn dataField="usedByMarkets" width="150" dataAlign="left" dataSort={true} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>Used By Markets</TableHeaderColumn>
                             <TableHeaderColumn dataField="usedBySegments" width="150" dataAlign="left" dataSort={true} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>Used By Segments</TableHeaderColumn>
