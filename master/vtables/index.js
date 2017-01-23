@@ -50065,7 +50065,7 @@ var ReportDataQuality = (function () {
                 for (var i = 0; i < list.length; i++) {
                     var service = list[i];
                     if (service.tags.indexOf('Application') != -1 && service.tags.indexOf('IT') != -1) {
-                        
+
                         for (var z = 0; z < service.serviceHasConsumers.length; z++) {
                             var tmp = service.serviceHasConsumers[z];
                             if (tmp) {
@@ -50087,7 +50087,7 @@ var ReportDataQuality = (function () {
                 for (var key in groupedByMarket) {
                     var compliant = [];
                     var noncompliant = [];
-                    
+
                     rule = 'Adding applications, but no project';
                     compliant[rule] = 0;
                     noncompliant[rule] = 0;
@@ -50165,9 +50165,9 @@ var ReportDataQuality = (function () {
                     noncompliant[rule] = 0;
                     for (var i = 0; i < groupedByMarket[key].length; i++) {
                         if (reportUtils.getCurrentLifecycle(groupedByMarket[key][i]) && reportUtils.getCurrentLifecycle(groupedByMarket[key][i]).phaseID == 3) {
-                            if (reportUtils.getTagFromGroup(groupedByMarket[key][i], 'COTS Package') || reportUtils.getTagFromGroup(groupedByMarket[key][i], 'Mo COTS Package')) 
-                                compliant[rule]++; 
-                            else 
+                            if (reportUtils.getTagFromGroup(groupedByMarket[key][i], 'COTS Package') || reportUtils.getTagFromGroup(groupedByMarket[key][i], 'Mo COTS Package'))
+                                compliant[rule]++;
+                            else
                                 noncompliant[rule]++;
                         }
                     }
@@ -50195,6 +50195,32 @@ var ReportDataQuality = (function () {
                     }
                     pushToOutput(output, key, rule, compliant, noncompliant,
                         'lifecycle[]=3&lifecycle_data=today&tags_cots_package[]=COTS+Package&serviceHasSoftware[]=na');
+
+                    rule = 'has Software Product Placeholder';
+                    compliant[rule] = 0;
+                    noncompliant[rule] = 0;
+                    for (var i = 0; i < groupedByMarket[key].length; i++) {
+                        if (reportUtils.getTagFromGroup(groupedByMarket[key][i], 'COTS Package') && reportUtils.getCurrentLifecycle(groupedByMarket[key][i]) && reportUtils.getCurrentLifecycle(groupedByMarket[key][i]).phaseID == 3) {
+                            var c = false;
+                            for (var z = 0; z < groupedByMarket[key][i].serviceHasResources.length; z++) {
+                                var tmp = groupedByMarket[key][i].serviceHasResources[z];
+                                if (tmp && tmp.resourceID) {
+                                    var resource = fsIndex.index.resources[tmp.resourceID];
+                                    if (resource && resource.objectCategoryID == 1) {
+                                        if (resource.tags.indexOf('Placeholder') != -1) {
+                                            noncompliant[rule]++;
+                                        } else {
+                                            compliant[rule]++;
+                                        }
+                                    }
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    pushToOutput(output, key, rule, compliant, noncompliant,
+                        'lifecycle[]=3&lifecycle_data=today&tags_cots_package[]=COTS+Package&serviceHasSoftware[]=tag-' + tagIDs['Placeholder']);
+
 
                     rule = 'has Description';
                     compliant[rule] = 0;
@@ -50292,9 +50318,9 @@ var ReportDataQuality = (function () {
                     noncompliant[rule] = 0;
                     for (var i = 0; i < groupedByMarket[key].length; i++) {
                         if (reportUtils.getCurrentLifecycle(groupedByMarket[key][i]) && reportUtils.getCurrentLifecycle(groupedByMarket[key][i]).phaseID == 3) {
-                            if (reportUtils.getTagFromGroup(groupedByMarket[key][i], tagGroups['CostCentre'])) 
-                                compliant[rule]++; 
-                            else 
+                            if (reportUtils.getTagFromGroup(groupedByMarket[key][i], tagGroups['CostCentre']))
+                                compliant[rule]++;
+                            else
                                 noncompliant[rule]++;
                         }
                     }
@@ -50842,7 +50868,7 @@ var ReportApplicationPortfolio = (function () {
 
                         output.push({
                             name: list[i].displayName,
-                            description: list[i].description.replace(/(?:\r\n|\r|\n)/g, ' '),
+                            description: list[i].description.replace(/(?:\r\n|\r|\n|;|,)/g, ' ').replace(/(?:')/g, ' '),
                             cobraId: cobras.length ? cobras[0].id : '',
                             cobraName: cobras.length ? cobras[0].name : '',
                             id: list[i].ID,
@@ -50868,7 +50894,7 @@ var ReportApplicationPortfolio = (function () {
                             businessCriticality: list[i].businessCriticalityID ? businessCriticality[list[i].businessCriticalityID] : '',
                             deployment: getTagFromGroup(list[i], deployments),
                             alias: list[i].alias,
-                            reference: list[i].reference,
+                            reference: list[i].reference.replace(/(?:;)/g, ' '),
                             soxpciFlag: getTagFromGroup(list[i], soxpciFlags),
                             itOwner: itOwner ? users[itOwner] : '',
                             businessOwner: businessOwner ? users[businessOwner] : '',
@@ -50915,8 +50941,8 @@ var ReportApplicationPortfolio = (function () {
                     React.createElement("div", null, 
                         React.createElement(BootstrapTable, {data: output, striped: true, hover: true, search: true, pagination: true, exportCSV: true}, 
                             React.createElement(TableHeaderColumn, {dataField: "id", isKey: true, hidden: true}, "ID"), 
-                            React.createElement(TableHeaderColumn, {dataField: "name", width: "150", dataAlign: "left", dataSort: true, dataFormat: link, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "Application Name"), 
-                            React.createElement(TableHeaderColumn, {dataField: "description", width: "150", dataAlign: "left", dataSort: true, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "Description"), 
+                            React.createElement(TableHeaderColumn, {dataField: "name", width: "250", dataAlign: "left", dataSort: true, dataFormat: link, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "Application Name"), 
+                            React.createElement(TableHeaderColumn, {dataField: "description", width: "250", dataAlign: "left", dataSort: true, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "Description"), 
                             React.createElement(TableHeaderColumn, {dataField: "cobraName", width: "150", dataAlign: "left", dataSort: true, dataFormat: linkBC, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "COBRA"), 
                             React.createElement(TableHeaderColumn, {dataField: "lifecyclePhase", width: "100", dataAlign: "left", dataSort: true, filter: { type: "SelectFilter", options: getLookup(lifecycleArray)}}, "Phase"), 
                             React.createElement(TableHeaderColumn, {dataField: "golive", width: "150", dataAlign: "left", dataSort: true, filter: { type: "TextFilter", placeholder: "Please enter a value"}}, "Go Live Date"), 
