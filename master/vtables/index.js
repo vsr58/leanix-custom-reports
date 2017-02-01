@@ -50840,7 +50840,7 @@ var ReportApplicationPortfolio = (function () {
                                             });
                                         }
                                     } else {
-                                        if (tmp.primaryTypeID == 1) {
+                                        if (resources.length == 0 || tmp.primaryTypeID == 1) {
                                             resources.push({
                                                 id: tmp.resourceID,
                                                 name: fsIndex.index.resources[tmp.resourceID].name,
