@@ -4,6 +4,7 @@
   "description": "Template",
   "main": "index.js",
   "scripts": {
+    "watch": "node ./node_modules/gulp-cli/bin/gulp.js --gulpfile ./gulpfile.js watch",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",

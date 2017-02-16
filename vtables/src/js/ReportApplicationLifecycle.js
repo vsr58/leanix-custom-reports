@@ -42,7 +42,6 @@ var ReportApplicationLifecycle = (function () {
 
                 var reportUtils = new ReportUtils();
 
-
                 var getTagFromGroup = function (object, validTags) {
                     var cc = object.tags.filter(function (x) {
                         if (validTags.indexOf(x) >= 0)
@@ -67,8 +66,6 @@ var ReportApplicationLifecycle = (function () {
                 };
 
                 var output = [];
-                var markets = {};
-                var projectEffects = {};
 
                 var projectTypes = tagGroups['Project Type'];
                 var costCentres = tagGroups['CostCentre'];
@@ -84,100 +81,166 @@ var ReportApplicationLifecycle = (function () {
                 for (var key in projectImpacts) {
                     projectImpactOptions.push(projectImpacts[key]);
                 }
+                var decommissioningRE = /decommissioning/i;
 
                 for (var i = 0; i < list.length; i++) {
                     if (!that.tagFilter || list[i].tags.indexOf(that.tagFilter) != -1) {
-
+                        var lifecycles = reportUtils.getLifecycles(list[i]);
                         var currentLifecycle = reportUtils.getCurrentLifecycle(list[i]);
-
-                        // Extract market
-                        var re = /^([A-Z]{2,3})_/;
-                        var market = '';
-
-                        if ((m = re.exec(list[i].fullName)) !== null) {
-                            if (m.index === re.lastIndex) {
-                                re.lastIndex++;
-                            }
-                            // View your result using the m-variable.
-                            market = m[1];
-                            if (market)
-                                markets[market] = market;
-                        }
-
                         var projects = [];
                         // Projects
                         for (var z = 0; z < list[i].serviceHasProjects.length; z++) {
                             var tmp = list[i].serviceHasProjects[z];
                             if (tmp) {
                                 if (tmp.projectID && fsIndex.index.projects[tmp.projectID]) {
-
-                                    var projectType = getTagFromGroup(fsIndex.index.projects[tmp.projectID], projectTypes)
-
-                                    output.push({
+                                    var projectType = getTagFromGroup(fsIndex.index.projects[tmp.projectID], projectTypes);
+                                    var projectName = fsIndex.index.projects[tmp.projectID].fullName;
+                                    var outputItem = {
                                         name: list[i].fullName,
                                         id: list[i].ID,
                                         costCentre: getTagFromGroup(list[i], costCentres),
                                         deployment: getTagFromGroup(list[i], deployments),
-                                        market: market,
                                         projectId: tmp.projectID,
-                                        projectName: fsIndex.index.projects[tmp.projectID].fullName,
-                                        projectEffect: tmp.projectImpactID ? projectImpacts[tmp.projectImpactID] : '',
+                                        projectName: projectName,
+                                        projectImpact: tmp.projectImpactID ? projectImpacts[tmp.projectImpactID] : '',
                                         projectType: projectType,
                                         lifecyclePhase: currentLifecycle ? currentLifecycle.phase : '',
                                         lifecycleStart: currentLifecycle ? currentLifecycle.startDate : ''
-                                    });
-
-                                    if (tmp.comment)
-                                        projectEffects[tmp.comment] = tmp.comment;
+                                    };
+                                    for (var j = 0; j < lifecycles.length; j++) {
+                                        var addItem = false;
+                                        switch (lifecycles[j].phaseID) {
+                                            case '1': // plan
+                                            case '2': // phase in
+                                                if (tmp.projectImpactID && tmp.projectImpactID === '1') {
+                                                    addItem = true;
+                                                }
+                                                break;
+                                            case '3': // active
+                                                if (!decommissioningRE.test(projectName)
+                                                        && (!tmp.projectImpactID || tmp.projectImpactID === '1' || tmp.projectImpactID === '2')) {
+                                                    addItem = true;
+                                                }
+                                                break;
+                                            case '4': // phase out
+                                            case '5': // end of life
+                                                if (decommissioningRE.test(projectName) && tmp.projectImpactID === '3') {
+                                                    addItem = true;
+                                                }
+                                                break;
+                                            default:
+                                                throw new Error('Unknown phaseID: ' + lifecycles[j].phaseID);
+                                        }
+                                        if (addItem) {
+                                            var newItem = {};
+                                            for (var key in outputItem) {
+                                                newItem[key] = outputItem[key];
+                                            }
+                                            newItem.lifecyclePhase = lifecycles[j].phase;
+                                            newItem.lifecycleStart = lifecycles[j].startDate;
+                                            output.push(newItem);
+                                        }
+                                    }
                                 }
                             }
                         }
-
-                        if (list[i].serviceHasProjects.length == 0) {
-                            output.push({
+                        if (list[i].serviceHasProjects.length === 0) {
+                            var outputItem = {
                                 name: list[i].fullName,
                                 id: list[i].ID,
                                 costCentre: getTagFromGroup(list[i], costCentres),
                                 deployment: getTagFromGroup(list[i], deployments),
-                                market: market,
                                 projectId: '',
                                 projectName: '',
-                                projectEffect: '',
+                                projectImpact: '',
                                 projectType: '',
                                 lifecyclePhase: currentLifecycle ? currentLifecycle.phase : '',
                                 lifecycleStart: currentLifecycle ? currentLifecycle.startDate : ''
-                            });
+                            };
+                            for (var j = 0; j < lifecycles.length; j++) {
+                                var newItem = {};
+                                for (var key in outputItem) {
+                                    newItem[key] = outputItem[key];
+                                }
+                                newItem.lifecyclePhase = lifecycles[j].phase;
+                                newItem.lifecycleStart = lifecycles[j].startDate;
+                                output.push(newItem);
+                            }
                         }
-
-
                     }
                 }
 
 
                 function link(cell, row) {
-                    return '<a href="' + that.reportSetup.baseUrl + '/services/' + row.id + '" target="_blank">' + cell + '</a>';
+                    return '<a href="' + that.reportSetup.baseUrl + '/services/' + row.id + '" target="_blank">' + row.name + '</a>';
                 }
 
                 function linkProject(cell, row) {
                     if (row.projectId)
-                        return '<a href="' + that.reportSetup.baseUrl + '/projects/' + row.projectId + '" target="_blank">' + cell + '</a>';
+                        return '<a href="' + that.reportSetup.baseUrl + '/projects/' + row.projectId + '" target="_blank">' + row.projectName + '</a>';
                 }
 
                 ReactDOM.render(
-                    <div>
-                        <BootstrapTable data={output} striped={true} hover={true} search={true} pagination={true} exportCSV={true}>
-                            <TableHeaderColumn dataField="id" isKey={true} hidden={true}>ID</TableHeaderColumn>
-                            <TableHeaderColumn dataField="market" width="80" dataAlign="left" dataSort={true} filter={{ type: "SelectFilter", options: markets }}>Market</TableHeaderColumn>
-                            <TableHeaderColumn dataField="name" dataAlign="left" dataSort={true} dataFormat={link} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>Application Name</TableHeaderColumn>
-                            <TableHeaderColumn dataField="costCentre" width="120" dataAlign="left" dataSort={true} filter={{ type: "SelectFilter", options: getLookup(costCentres) }}>Cost Centre</TableHeaderColumn>
-                            <TableHeaderColumn dataField="deployment" width="100" dataAlign="left" dataSort={true} filter={{ type: "SelectFilter", options: getLookup(deployments) }}>Deployment</TableHeaderColumn>
-                            <TableHeaderColumn dataField="lifecyclePhase" width="100" dataAlign="left" dataSort={true} filter={{ type: "SelectFilter", options: getLookup(lifecycleArray) }}>Phase</TableHeaderColumn>
-                            <TableHeaderColumn dataField="lifecycleStart" width="100" dataAlign="left" dataSort={true} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>Phase Start</TableHeaderColumn>
-                            <TableHeaderColumn dataField="projectName" dataAlign="left" dataSort={true} dataFormat={linkProject} filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>Project Name</TableHeaderColumn>
-                            <TableHeaderColumn dataField="projectEffect" width="100" dataAlign="left" dataSort={true} filter={{ type: "SelectFilter", options: getLookup(projectImpactOptions) }}>Project Effect</TableHeaderColumn>
-                            <TableHeaderColumn dataField="projectType" width="100" dataAlign="left" dataSort={true} filter={{ type: "SelectFilter", options: getLookup(projectTypes) }}>Project Type</TableHeaderColumn>
-                        </BootstrapTable>
-                    </div>,
+                    <BootstrapTable
+                            data={output}
+                            striped={true}
+                            hover={true}
+                            search={true}
+                            pagination={true}
+                            exportCSV={true}>
+                        <TableHeaderColumn
+                            dataField="id"
+                            isKey={true}
+                            hidden={true}>ID</TableHeaderColumn>
+                        <TableHeaderColumn
+                            dataField="name"
+                            dataAlign="left"
+                            dataSort={true}
+                            dataFormat={link}
+                            filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>Application Name</TableHeaderColumn>
+                        <TableHeaderColumn
+                            dataField="costCentre"
+                            width="150"
+                            dataAlign="left"
+                            dataSort={true}
+                            filter={{ type: "SelectFilter", options: getLookup(costCentres) }}>Cost Centre</TableHeaderColumn>
+                        <TableHeaderColumn
+                            dataField="deployment"
+                            width="150"
+                            dataAlign="left"
+                            dataSort={true}
+                            filter={{ type: "SelectFilter", options: getLookup(deployments) }}>Deployment</TableHeaderColumn>
+                        <TableHeaderColumn
+                            dataField="lifecyclePhase"
+                            width="120"
+                            dataAlign="left"
+                            dataSort={true}
+                            filter={{ type: "SelectFilter", options: getLookup(lifecycleArray) }}>Phase</TableHeaderColumn>
+                        <TableHeaderColumn
+                            dataField="lifecycleStart"
+                            width="120"
+                            dataAlign="left"
+                            dataSort={true}
+                            filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>Phase Start</TableHeaderColumn>
+                        <TableHeaderColumn
+                            dataField="projectName"
+                            dataAlign="left"
+                            dataSort={true}
+                            dataFormat={linkProject}
+                            filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>Project Name</TableHeaderColumn>
+                        <TableHeaderColumn
+                            dataField="projectImpact"
+                            width="150"
+                            dataAlign="left"
+                            dataSort={true}
+                            filter={{ type: "SelectFilter", options: getLookup(projectImpactOptions) }}>Project Impact</TableHeaderColumn>
+                        <TableHeaderColumn
+                            dataField="projectType"
+                            width="150"
+                            dataAlign="left"
+                            dataSort={true}
+                            filter={{ type: "SelectFilter", options: getLookup(projectTypes) }}>Project Type</TableHeaderColumn>
+                    </BootstrapTable>,
                     document.getElementById("app")
                 );
             });
