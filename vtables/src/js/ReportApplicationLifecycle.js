@@ -70,7 +70,7 @@ var ReportApplicationLifecycle = (function () {
                 var projectTypes = tagGroups['Project Type'];
                 var costCentres = tagGroups['CostCentre'];
                 var deployments = tagGroups['Deployment'];
-                var lifecycleArray = reportUtils.lifecycleArray();
+				var lifecycleArray = reportUtils.lifecycleArray();
 
                 var projectImpacts = {
                     1: "Adds",
@@ -82,11 +82,20 @@ var ReportApplicationLifecycle = (function () {
                     projectImpactOptions.push(projectImpacts[key]);
                 }
                 var decommissioningRE = /decommissioning/i;
+				
+				var createItem = function (outputItem, lifecycle) {
+					var newItem = {};
+					for (var key in outputItem) {
+						newItem[key] = outputItem[key];
+					}
+					newItem.lifecyclePhase = lifecycle.phase;
+					newItem.lifecycleStart = lifecycle.startDate;
+					return newItem;
+				};
 
                 for (var i = 0; i < list.length; i++) {
                     if (!that.tagFilter || list[i].tags.indexOf(that.tagFilter) != -1) {
                         var lifecycles = reportUtils.getLifecycles(list[i]);
-                        var currentLifecycle = reportUtils.getCurrentLifecycle(list[i]);
                         var projects = [];
                         // Projects
                         for (var z = 0; z < list[i].serviceHasProjects.length; z++) {
@@ -104,8 +113,8 @@ var ReportApplicationLifecycle = (function () {
                                         projectName: projectName,
                                         projectImpact: tmp.projectImpactID ? projectImpacts[tmp.projectImpactID] : '',
                                         projectType: projectType,
-                                        lifecyclePhase: currentLifecycle ? currentLifecycle.phase : '',
-                                        lifecycleStart: currentLifecycle ? currentLifecycle.startDate : ''
+                                        lifecyclePhase: '',
+                                        lifecycleStart: ''
                                     };
                                     for (var j = 0; j < lifecycles.length; j++) {
                                         var addItem = false;
@@ -132,13 +141,7 @@ var ReportApplicationLifecycle = (function () {
                                                 throw new Error('Unknown phaseID: ' + lifecycles[j].phaseID);
                                         }
                                         if (addItem) {
-                                            var newItem = {};
-                                            for (var key in outputItem) {
-                                                newItem[key] = outputItem[key];
-                                            }
-                                            newItem.lifecyclePhase = lifecycles[j].phase;
-                                            newItem.lifecycleStart = lifecycles[j].startDate;
-                                            output.push(newItem);
+                                            output.push(createItem(outputItem, lifecycles[j]));
                                         }
                                     }
                                 }
@@ -154,17 +157,11 @@ var ReportApplicationLifecycle = (function () {
                                 projectName: '',
                                 projectImpact: '',
                                 projectType: '',
-                                lifecyclePhase: currentLifecycle ? currentLifecycle.phase : '',
-                                lifecycleStart: currentLifecycle ? currentLifecycle.startDate : ''
+                                lifecyclePhase: '',
+                                lifecycleStart: ''
                             };
                             for (var j = 0; j < lifecycles.length; j++) {
-                                var newItem = {};
-                                for (var key in outputItem) {
-                                    newItem[key] = outputItem[key];
-                                }
-                                newItem.lifecyclePhase = lifecycles[j].phase;
-                                newItem.lifecycleStart = lifecycles[j].startDate;
-                                output.push(newItem);
+								output.push(createItem(outputItem, lifecycles[j]));
                             }
                         }
                     }
@@ -194,6 +191,7 @@ var ReportApplicationLifecycle = (function () {
                             hidden={true}>ID</TableHeaderColumn>
                         <TableHeaderColumn
                             dataField="name"
+							width="300"
                             dataAlign="left"
                             dataSort={true}
                             dataFormat={link}
@@ -206,7 +204,7 @@ var ReportApplicationLifecycle = (function () {
                             filter={{ type: "SelectFilter", options: getLookup(costCentres) }}>Cost Centre</TableHeaderColumn>
                         <TableHeaderColumn
                             dataField="deployment"
-                            width="150"
+                            width="180"
                             dataAlign="left"
                             dataSort={true}
                             filter={{ type: "SelectFilter", options: getLookup(deployments) }}>Deployment</TableHeaderColumn>
@@ -224,6 +222,7 @@ var ReportApplicationLifecycle = (function () {
                             filter={{ type: "TextFilter", placeholder: "Please enter a value" }}>Phase Start</TableHeaderColumn>
                         <TableHeaderColumn
                             dataField="projectName"
+							width="300"
                             dataAlign="left"
                             dataSort={true}
                             dataFormat={linkProject}
