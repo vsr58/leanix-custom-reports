@@ -25,7 +25,7 @@ gulp.task('dist_css', ['copy'], function() {
       './src/index.css'
     ])
     .pipe(concat('index.css'))
-    .pipe(gulp.dest('./dist/'));
+    .pipe(gulp.dest('./dist/css'));
 });
 
 gulp.task('dist_fonts', ['copy'], function() {
@@ -58,6 +58,7 @@ gulp.task('dist', ['copy', 'dist_css', 'dist_fonts'], function() {
       './src/js/ReportCIMMasterList.js',
       './src/js/ReportPassbook.js',
       './src/js/ReportProjectDataQuality.js',
+	  './src/js/ReportTechnopedia.js',
       './src/js/App.js'
     ])
     .pipe(react())

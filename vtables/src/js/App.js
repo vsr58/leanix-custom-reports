@@ -40,7 +40,9 @@
         case 'project-data-quality':
             var report = new ReportProjectDataQuality(reportSetup);
             break;
-
+		case 'technopedia':
+			var report = new ReportTechnopedia(reportSetup);
+			break;
     }
 
     if (report)
