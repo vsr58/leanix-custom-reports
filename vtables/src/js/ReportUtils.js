@@ -98,7 +98,14 @@ ReportUtils.prototype.getLookup = function (data) {
     for (var i = 0; i < data.length; i++) {
         ret[data[i]] = data[i];
     }
+    return ret;
+};
 
+ReportUtils.prototype.getLookupByIndex = function (data) {
+    var ret = {};
+    for (var i = 0; i < data.length; i++) {
+        ret[i] = data[i];
+    }
     return ret;
 };
 

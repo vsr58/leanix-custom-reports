@@ -41,7 +41,7 @@
             var report = new ReportProjectDataQuality(reportSetup);
             break;
 		case 'technopedia':
-			var report = new ReportTechnopedia(reportSetup);
+			var report = new ReportTechnopedia(reportSetup, 'Application');
 			break;
     }
 
