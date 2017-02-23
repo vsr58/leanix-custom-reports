@@ -56894,19 +56894,6 @@ var ReportTechnopedia = (function () {
 
 	ReportTechnopedia.prototype.render = function () {
 		var that = this;
-		var tagGroupsUrl = this.reportSetup.apiBaseUrl + '/tagGroups';
-		var tagGroupsPromise = $.get(tagGroupsUrl).then(function (response) {
-				var tagGroups = {};
-				for (var i = 0; i < response.length; i++) {
-					var tagGroup = response[i];
-					var tags = [];
-					for (var j = 0; j < tagGroup.tags.length; j++) {
-						tags.push(tagGroup.tags[j].name);
-					}
-					tagGroups[tagGroup.name] = tags;
-				}
-				return tagGroups;
-			});
 		var documentsUrl = '/documents?relations=false&referenceSystem=technopedia';
 		var documentsPromise = $.get(this.reportSetup.apiBaseUrl + documentsUrl).then(function (documents) {
 				return documents;
@@ -56933,7 +56920,7 @@ var ReportTechnopedia = (function () {
 		var factsheetsPromise = $.get(this.reportSetup.apiBaseUrl + factsheetsUrl).then(function (response) {
 				return response.data;
 			});
-		$.when(tagGroupsPromise, documentsPromise, factsheetsPromise).then(function (tagGroups, documents, factsheets) {
+		$.when(documentsPromise, factsheetsPromise).then(function (documents, factsheets) {
 			var reportUtils = new ReportUtils();
 			// extract data
 			var fsIndex = new FactSheetIndex(factsheets);
@@ -57002,7 +56989,7 @@ var ReportTechnopedia = (function () {
 				var count = 0;
 				for (var i = 0; i < serviceResource.serviceHasResources.length; i++) {
 					var serviceId = serviceResource.serviceHasResources[i].serviceID;
-					var service = fsIndex.index.service[serviceId];
+					var service = fsIndex.index.services[serviceId];
 					if (!service) {
 						continue;
 					}
