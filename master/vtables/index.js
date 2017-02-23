@@ -57094,7 +57094,7 @@ var ReportTechnopedia = (function () {
 						}}, "Technopedia status"), 
 					React.createElement(TableHeaderColumn, {dataSort: true, 
 						dataField: "count", 
-						width: "180", 
+						width: "200", 
 						dataAlign: "right", 
 						filter: {
 							type: 'NumberFilter',
