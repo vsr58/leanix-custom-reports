@@ -54464,7 +54464,14 @@ ReportUtils.prototype.getLookup = function (data) {
     for (var i = 0; i < data.length; i++) {
         ret[data[i]] = data[i];
     }
+    return ret;
+};
 
+ReportUtils.prototype.getLookupByIndex = function (data) {
+    var ret = {};
+    for (var i = 0; i < data.length; i++) {
+        ret[i] = data[i];
+    }
     return ret;
 };
 
@@ -56887,6 +56894,19 @@ var ReportTechnopedia = (function () {
 
 	ReportTechnopedia.prototype.render = function () {
 		var that = this;
+		var tagGroupsUrl = this.reportSetup.apiBaseUrl + '/tagGroups';
+		var tagGroupsPromise = $.get(tagGroupsUrl).then(function (response) {
+				var tagGroups = {};
+				for (var i = 0; i < response.length; i++) {
+					var tagGroup = response[i];
+					var tags = [];
+					for (var j = 0; j < tagGroup.tags.length; j++) {
+						tags.push(tagGroup.tags[j].name);
+					}
+					tagGroups[tagGroup.name] = tags;
+				}
+				return tagGroups;
+			});
 		var documentsUrl = '/documents?relations=false&referenceSystem=technopedia';
 		var documentsPromise = $.get(this.reportSetup.apiBaseUrl + documentsUrl).then(function (documents) {
 				return documents;
@@ -56907,12 +56927,13 @@ var ReportTechnopedia = (function () {
 			 + '&filterAttributes[]=ID'
 			 + '&filterAttributes[]=fullName'
 			 + '&filterAttributes[]=objectCategoryID'
+			 + '&filterAttributes[]=tags'
 			 + '&filterAttributes[]=resourceType'
 			 + '&filterAttributes[]=displayName';
 		var factsheetsPromise = $.get(this.reportSetup.apiBaseUrl + factsheetsUrl).then(function (response) {
 				return response.data;
 			});
-		$.when(documentsPromise, factsheetsPromise).then(function (documents, factsheets) {
+		$.when(tagGroupsPromise, documentsPromise, factsheetsPromise).then(function (tagGroups, documents, factsheets) {
 			var reportUtils = new ReportUtils();
 			// extract data
 			var fsIndex = new FactSheetIndex(factsheets);
@@ -56950,7 +56971,7 @@ var ReportTechnopedia = (function () {
 				'URL',
 				'Ignore',
 				'Missing',
-				'Blank'
+				'"Blank"'
 			];
 			var getTechnopediaStateFromDoc = function (document) {
 				if (!document || !document.referenceType) {
@@ -56965,10 +56986,44 @@ var ReportTechnopedia = (function () {
 					return 0;
 				}
 			};
+			var marketRE = /^([A-Z]{2,3})_/;
+			var getMarket = function (service) {
+				var m = marketRE.exec(service.displayName);
+				if (!m) {
+					return null;
+				}
+				return m[1]; // first one is the match, followed by group matches
+			};
+			var getResourceCountInOtherMarkets = function (serviceResource, market) {
+				if (!serviceResource || !serviceResource.serviceHasResources || !serviceResource.serviceHasResources.length
+						|| !market) {
+					return 0;
+				}
+				var count = 0;
+				for (var i = 0; i < serviceResource.serviceHasResources.length; i++) {
+					var serviceId = serviceResource.serviceHasResources[i].serviceID;
+					var service = fsIndex.index.service[serviceId];
+					if (!service) {
+						continue;
+					}
+					var serviceMarket = getMarket(service);
+					if (!serviceMarket) {
+						continue;
+					}
+					if (serviceMarket !== market) {
+						count++;
+					}
+				}
+				return count;
+			};
 			// transform data
 			var output = [];
 			for (var i = 0; i < services.length; i++) {
 				var service = services[i];
+				if (that.tagFilter && service.tags.indexOf(that.tagFilter) < 0) {
+					// only tagged services
+					continue;
+				}
 				var serviceResources = service.serviceHasResources;
 				for (var j = 0; j < serviceResources.length; j++) {
 					var serviceResourceId = serviceResources[j].resourceID;
@@ -56983,7 +57038,7 @@ var ReportTechnopedia = (function () {
 						state: getTechnopediaStateFromDoc(technopediaDoc),
 						stateRef: technopediaDoc ? technopediaDoc.url : '',
 						stateTitle: technopediaDoc ? technopediaDoc.name : '',
-						count: serviceResource.serviceHasResources ? serviceResource.serviceHasResources.length - 1 : 0 // TODO
+						count: getResourceCountInOtherMarkets(serviceResource, getMarket(service))
 					});
 				}
 			}
@@ -57004,7 +57059,7 @@ var ReportTechnopedia = (function () {
 				case 2:
 					return '<span title="' + row.stateTitle + '">' + technopediaStates[row.state] + '</span>';
 				case 3:
-					return technopediaStates[3];
+					return '';
 				}
 				return '';
 			}
@@ -57048,7 +57103,7 @@ var ReportTechnopedia = (function () {
 						filter: {
 							type: 'SelectFilter',
 							placeholder: 'Select a status',
-							options: reportUtils.getLookup(technopediaStates)
+							options: reportUtils.getLookupByIndex(technopediaStates)
 						}}, "Technopedia status"), 
 					React.createElement(TableHeaderColumn, {dataSort: true, 
 						dataField: "count", 
@@ -57056,9 +57111,9 @@ var ReportTechnopedia = (function () {
 						dataAlign: "right", 
 						filter: {
 							type: 'NumberFilter',
-							placeholder: ' ',
-							delay: 1000
-						}}, "Count")
+							placeholder: 'Please enter a value',
+							delay: 500
+						}}, "Count in other markets")
 				)
 			, document.getElementById('app'));
 		});
@@ -57110,7 +57165,7 @@ var ReportTechnopedia = (function () {
             var report = new ReportProjectDataQuality(reportSetup);
             break;
 		case 'technopedia':
-			var report = new ReportTechnopedia(reportSetup);
+			var report = new ReportTechnopedia(reportSetup, 'Application');
 			break;
     }
 
