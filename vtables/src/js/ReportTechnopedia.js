@@ -210,7 +210,7 @@ var ReportTechnopedia = (function () {
 						}}>Technopedia status</TableHeaderColumn>
 					<TableHeaderColumn dataSort
 						dataField='count'
-						width='180'
+						width='200'
 						dataAlign='right'
 						filter={{
 							type: 'NumberFilter',
