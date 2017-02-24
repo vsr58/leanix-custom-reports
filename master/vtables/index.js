@@ -54418,11 +54418,10 @@ ReportUtils.prototype.getCurrentLifecycle = function (item) {
 };
 
 ReportUtils.prototype.getLifecycle = function (item, stateID) {
-    var current;
     for (var i = 0; i < item.factSheetHasLifecycles.length; i++) {
-        if (item.factSheetHasLifecycles[i].lifecycleStateID === stateID) { 
+        if (item.factSheetHasLifecycles[i].lifecycleStateID === stateID) {
             var curDate = Date.parse(item.factSheetHasLifecycles[i].startDate);
-            current = {
+            return {
                 phase: this.lifecycles[item.factSheetHasLifecycles[i].lifecycleStateID],
                 phaseID: item.factSheetHasLifecycles[i].lifecycleStateID,
                 startDate: this.formattedDate(curDate),
@@ -54430,7 +54429,6 @@ ReportUtils.prototype.getLifecycle = function (item, stateID) {
             };
         }
     }
-    return current;
 };
 
 ReportUtils.prototype.getLifecycles = function (item) {
@@ -55509,8 +55507,8 @@ var ReportApplicationPortfolio = (function () {
                         }
 
                         var currentLifecycle = reportUtils.getCurrentLifecycle(list[i]);
-                        var golive = reportUtils.getLifecycle(list[i], 3);
-                        var retired = reportUtils.getLifecycle(list[i], 5);
+                        var golive = reportUtils.getLifecycle(list[i], '3');
+                        var retired = reportUtils.getLifecycle(list[i], '5');
 
                         var itOwner = '';
                         var businessOwner = '';
@@ -55543,8 +55541,6 @@ var ReportApplicationPortfolio = (function () {
                             cotsSoftware = resources[0].name.endsWith('Software Product') ? '' : resources[0].displayName.substring(cotsVendor.length);
                             cotsSoftwareID = resources[0].id;
                         }
-
-
                         output.push({
                             name: list[i].displayName,
                             description: list[i].description.replace(/(?:\r\n|\r|\n|;|,)/g, ' ').replace(/(?:')/g, ' '),
