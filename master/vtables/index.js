@@ -54990,6 +54990,9 @@ var ReportDataQuality = (function () {
     return ReportDataQuality;
 })();
 var ReportApplicationLifecycle = (function () {
+
+	'use strict';
+
     function ReportApplicationLifecycle(reportSetup, tagFilter, title) {
         this.reportSetup = reportSetup;
         this.tagFilter = tagFilter;
@@ -56922,15 +56925,13 @@ var ReportTechnopedia = (function () {
 			var fsIndex = new FactSheetIndex(factsheets);
 			var services = fsIndex.getSortedList('services');
 			var resources = fsIndex.getSortedList('resources');
-			var resourceTypes = {
+			var resourceTypes = { // exclude 'services'
 				1: 'Software',
-				2: 'Hardware',
-				3: 'Service'
+				2: 'Hardware'
 			};
-			var resourceTypesArray = [// objectCategoryID
+			var resourceTypesArray = [// objectCategoryID & exclude 'services'
 				'Software',
-				'Hardware',
-				'Service'
+				'Hardware'
 			];
 			var docIndex = {};
 			for (var i = 0; i < documents.length; i++) {
@@ -57011,6 +57012,10 @@ var ReportTechnopedia = (function () {
 				for (var j = 0; j < serviceResources.length; j++) {
 					var serviceResourceId = serviceResources[j].resourceID;
 					var serviceResource = fsIndex.index.resources[serviceResourceId];
+					var resourceType = resourceTypes[serviceResource.objectCategoryID];
+					if (!resourceType) {
+						continue;
+					}
 					var technopediaDoc = getTechnopediaDocument(serviceResource);
 					output.push({
 						id: service.ID,
