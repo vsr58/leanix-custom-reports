@@ -55059,17 +55059,15 @@ var ReportApplicationLifecycle = (function () {
                     return ret;
                 };
 
-                var output = [];
-
                 var projectTypes = tagGroups['Project Type'];
                 var costCentres = tagGroups['CostCentre'];
                 var deployments = tagGroups['Deployment'];
 				var lifecycleArray = reportUtils.lifecycleArray();
 
                 var projectImpacts = {
-                    1: "Adds",
-                    2: "Modifies",
-                    3: "Sunsets"
+                    1: 'Adds',
+                    2: 'Modifies',
+                    3: 'Sunsets'
                 };
                 var projectImpactOptions = [];
                 for (var key in projectImpacts) {
@@ -55086,78 +55084,125 @@ var ReportApplicationLifecycle = (function () {
 					newItem.lifecycleStart = lifecycle.startDate;
 					return newItem;
 				};
+				
+				var copy = function (item) {
+					var newItem = {};
+					for (var key in item) {
+						newItem[key] = item[key];
+					}
+					return newItem;
+				};
 
+                var output = [];
                 for (var i = 0; i < list.length; i++) {
-                    if (!that.tagFilter || list[i].tags.indexOf(that.tagFilter) != -1) {
-                        var lifecycles = reportUtils.getLifecycles(list[i]);
-                        var projects = [];
-                        // Projects
-                        for (var z = 0; z < list[i].serviceHasProjects.length; z++) {
-                            var tmp = list[i].serviceHasProjects[z];
-                            if (tmp) {
-                                if (tmp.projectID && fsIndex.index.projects[tmp.projectID]) {
-                                    var projectType = getTagFromGroup(fsIndex.index.projects[tmp.projectID], projectTypes);
-                                    var projectName = fsIndex.index.projects[tmp.projectID].fullName;
-                                    var outputItem = {
-                                        name: list[i].fullName,
-                                        id: list[i].ID,
-                                        costCentre: getTagFromGroup(list[i], costCentres),
-                                        deployment: getTagFromGroup(list[i], deployments),
-                                        projectId: tmp.projectID,
-                                        projectName: projectName,
-                                        projectImpact: tmp.projectImpactID ? projectImpacts[tmp.projectImpactID] : '',
-                                        projectType: projectType,
-                                        lifecyclePhase: '',
-                                        lifecycleStart: ''
-                                    };
-                                    for (var j = 0; j < lifecycles.length; j++) {
-                                        var addItem = false;
-                                        switch (lifecycles[j].phaseID) {
-                                            case '1': // plan
-                                            case '2': // phase in
-                                                if (tmp.projectImpactID && tmp.projectImpactID === '1') {
-                                                    addItem = true;
-                                                }
-                                                break;
-                                            case '3': // active
-                                                if (!decommissioningRE.test(projectName)
-                                                        && (!tmp.projectImpactID || tmp.projectImpactID === '1' || tmp.projectImpactID === '2')) {
-                                                    addItem = true;
-                                                }
-                                                break;
-                                            case '4': // phase out
-                                            case '5': // end of life
-                                                if (decommissioningRE.test(projectName) && tmp.projectImpactID === '3') {
-                                                    addItem = true;
-                                                }
-                                                break;
-                                            default:
-                                                throw new Error('Unknown phaseID: ' + lifecycles[j].phaseID);
-                                        }
-                                        if (addItem) {
-                                            output.push(createItem(outputItem, lifecycles[j]));
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        if (list[i].serviceHasProjects.length === 0) {
-                            var outputItem = {
-                                name: list[i].fullName,
-                                id: list[i].ID,
-                                costCentre: getTagFromGroup(list[i], costCentres),
-                                deployment: getTagFromGroup(list[i], deployments),
+					var service = list[i];
+                    if (!that.tagFilter || service.tags.indexOf(that.tagFilter) != -1) {
+                        var lifecycles = reportUtils.getLifecycles(service);
+						for (var j = 0; j < lifecycles.length; j++) {
+							var lifecycle = lifecycles[j];
+							var outputItem = {
+								name: service.fullName,
+                                id: service.ID,
+                                costCentre: getTagFromGroup(service, costCentres),
+                                deployment: getTagFromGroup(service, deployments),
                                 projectId: '',
                                 projectName: '',
                                 projectImpact: '',
                                 projectType: '',
-                                lifecyclePhase: '',
-                                lifecycleStart: ''
-                            };
-                            for (var j = 0; j < lifecycles.length; j++) {
-								output.push(createItem(outputItem, lifecycles[j]));
-                            }
-                        }
+                                lifecyclePhase: lifecycle.phase,
+                                lifecycleStart: lifecycle.startDate
+							};
+							if (!service.serviceHasProjects) {
+								// add directly, if no projects
+								output.push(outputItem);
+								continue;
+							}
+							var nothingAdded = true;
+							// add duplicates with project information according to lifecycle rules
+							switch (lifecycle.phaseID) {
+								case '1': // plan
+								case '2': // phase in
+									for (var k = 0; k < service.serviceHasProjects.length; k++) {
+										var projectRef = service.serviceHasProjects[k];
+										var projectId = projectRef.projectID;
+										var project = fsIndex.index.projects[projectId];
+										if (!project) {
+											continue;
+										}
+										var projectName = project.fullName;
+										var projectType = getTagFromGroup(project, projectTypes);
+										// project doesn't contain decommissioning in name and impact is 'adds'
+										if (!decommissioningRE.test(projectName) && projectRef.projectImpactID && projectRef.projectImpactID === '1') {
+											var projectImpact = projectImpacts[projectRef.projectImpactID];
+											var copiedItem = copy(outputItem);
+											copiedItem.projectId = projectId;
+											copiedItem.projectName = projectName;
+											copiedItem.projectImpact = projectImpact;
+											copiedItem.projectType = projectType;
+											output.push(copiedItem);
+											nothingAdded = false;
+										}
+									}
+									break;
+								case '3': // active
+									for (var k = 0; k < service.serviceHasProjects.length; k++) {
+										var projectRef = service.serviceHasProjects[k];
+										var projectId = service.serviceHasProjects[k].projectID;
+										var project = fsIndex.index.projects[projectId];
+										if (!project) {
+											continue;
+										}
+										var projectName = project.fullName;
+										var projectType = getTagFromGroup(project, projectTypes);
+										// project doesn't contain decommissioning in name and impact is 'adds', 'modifies' or no impact
+										if (!decommissioningRE.test(projectName)
+												&& (!projectRef.projectImpactID || projectRef.projectImpactID === '1' || projectRef.projectImpactID === '2')) {
+											var projectImpact = projectRef.projectImpactID ? projectImpacts[projectRef.projectImpactID] : '';
+											if (projectImpact === 'foo') {
+												console.log(projectRef);//TD_Appl22_withManyPrj-mix
+											}
+											var copiedItem = copy(outputItem);
+											copiedItem.projectId = projectId;
+											copiedItem.projectName = projectName;
+											copiedItem.projectImpact = projectImpact;
+											copiedItem.projectType = projectType;
+											output.push(copiedItem);
+											nothingAdded = false;
+										}
+									}
+									break;
+								case '4': // phase out
+								case '5': // end of life
+									for (var k = 0; k < service.serviceHasProjects.length; k++) {
+										var projectRef = service.serviceHasProjects[k];
+										var projectId = service.serviceHasProjects[k].projectID;
+										var project = fsIndex.index.projects[projectId];
+										if (!project) {
+											continue;
+										}
+										var projectName = project.fullName;
+										var projectType = getTagFromGroup(project, projectTypes);
+										// project does contain decommissioning in name or impact is 'sunsets'
+										if (decommissioningRE.test(projectName) || projectRef.projectImpactID === '3') {
+											var projectImpact = projectRef.projectImpactID ? projectImpacts[projectRef.projectImpactID] : '';
+											var copiedItem = copy(outputItem);
+											copiedItem.projectId = projectId;
+											copiedItem.projectName = projectName;
+											copiedItem.projectImpact = projectImpact;
+											copiedItem.projectType = projectType;
+											output.push(copiedItem);
+											nothingAdded = false;
+										}
+									}
+									break;
+								default:
+									throw new Error('Unknown phaseID: ' + lifecycles[j].phaseID);
+							}
+							if (nothingAdded) {
+								// add directly, if no rule applies, but without project information
+								output.push(outputItem);
+							}
+						}
                     }
                 }
 
