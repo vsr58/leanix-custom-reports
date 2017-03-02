@@ -11,6 +11,12 @@ Each custom report is located in its own subdirectory. It is expected that the s
 * Create a new directory named after the custom report by copying the ```template``` directory
 * Add a new line to ```build.sh``` for your subdirectory 
 
+### npm run createLink
+
+You can use ```npm run createLink``` (in project root) to create a ```link.html``` file that automatically contains the required query parameters (baseUrl, apiBaseUrl, token etc.) to start a report. See ```default_link.properties``` for more information. Before opening ```link.html``` in your browser you have to start your report by ```gulp watch``` (in report directory). Overtime the generated access token will expire (HTTP status code 401 Unauthorized in console). In this case please re-run the npm script and open ```link.html``` again.
+
+Note: The script doesn't support any proxy setting (nodejs doesn't either). So, if you're behind a proxy, please contact us and we might figure out a solution.
+
 ### Publishing for github pages
 In order to publish the current master or develop branch to github pages the command ```publish.sh``` can be executed. Before doing this make shure that the dist directory is up-to-date by executing ```build.sh```.
 
