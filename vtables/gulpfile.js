@@ -25,7 +25,7 @@ gulp.task('dist_css', ['copy'], function() {
       './src/index.css'
     ])
     .pipe(concat('index.css'))
-    .pipe(gulp.dest('./dist/css'));
+    .pipe(gulp.dest('./dist/'));
 });
 
 gulp.task('dist_fonts', ['copy'], function() {
@@ -42,7 +42,7 @@ gulp.task('dist', ['copy', 'dist_css', 'dist_fonts'], function() {
       './node_modules/react-dom/dist/react-dom.js',
       './node_modules/accounting/accounting.js',
       './node_modules/react-bootstrap-table/dist/react-bootstrap-table.js',
-      './node_modules/lodash/lodash.js',
+      './node_modules/lodash/index.js',
       './src/js/ReportSetup.js',
       './src/js/ReportUtils.js',
       './src/js/FactSheetIndex.js',
@@ -58,7 +58,6 @@ gulp.task('dist', ['copy', 'dist_css', 'dist_fonts'], function() {
       './src/js/ReportCIMMasterList.js',
       './src/js/ReportPassbook.js',
       './src/js/ReportProjectDataQuality.js',
-	  './src/js/ReportTechnopedia.js',
       './src/js/App.js'
     ])
     .pipe(react())

@@ -267,8 +267,8 @@ var ReportApplicationPortfolio = (function () {
                         }
 
                         var currentLifecycle = reportUtils.getCurrentLifecycle(list[i]);
-                        var golive = reportUtils.getLifecycle(list[i], '3');
-                        var retired = reportUtils.getLifecycle(list[i], '5');
+                        var golive = reportUtils.getLifecycle(list[i], 3);
+                        var retired = reportUtils.getLifecycle(list[i], 5);
 
                         var itOwner = '';
                         var businessOwner = '';
@@ -301,6 +301,8 @@ var ReportApplicationPortfolio = (function () {
                             cotsSoftware = resources[0].name.endsWith('Software Product') ? '' : resources[0].displayName.substring(cotsVendor.length);
                             cotsSoftwareID = resources[0].id;
                         }
+
+
                         output.push({
                             name: list[i].displayName,
                             description: list[i].description.replace(/(?:\r\n|\r|\n|;|,)/g, ' ').replace(/(?:')/g, ' '),

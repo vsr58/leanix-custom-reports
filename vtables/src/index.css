@@ -1,7 +1,7 @@
 .report-hierarchy .react-bs-table table td {
     overflow: auto;
     text-overflow: default;
-    white-space: normal !important;
+    white-space: normal;
 }
 
 .report-hierarchy .tr-level-1 {
