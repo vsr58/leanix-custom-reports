@@ -13,23 +13,18 @@ class App extends Component {
 
 	constructor(props) {
 		super(props);
+		this.leanixApi = new LeanixApi();
 		this._handleLoadingSuccess = this._handleLoadingSuccess.bind(this);
 		this._handleLoadingError = this._handleLoadingError.bind(this);
 		this.state = {
-			params: null,
 			loadingState: LOADING_INIT
 		};
 	}
 
 	componentDidMount() {
 		try {
-			const leanixApi = new LeanixApi();
-			const params = leanixApi.getParams();
-			console.log(params);
-			// set directly to avoid triggering rendering process and disable eslint warning
-			this.state.params = params; // eslint-disable-line
-			// invoke 'leanixApi' calls here with params, this._handleLoadingSuccess & this._handleLoadingError
-			leanixApi.queryFactsheets(params, this._handleLoadingSuccess, this._handleLoadingError, true, -1, [10, 18]);
+			console.log(this.leanixApi.queryParams);
+			this.leanixApi.queryFactsheets(this._handleLoadingSuccess, this._handleLoadingError, true, -1, [10, 18]);
 		} catch (error) {
 			this._handleLoadingError(error);
 		}
