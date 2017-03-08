@@ -3,10 +3,6 @@ import ReactGantt from 'gantt-for-react';
 
 class Diagram extends Component {
 	
-	/*
-		TODO bugfix: tasks === empty array -> TypeError: Cannot read property 'clone' of null
-	*/
-	
 	constructor(props) {
 		super(props);
 		this._handleClick = this._handleClick.bind(this);
@@ -101,8 +97,11 @@ class Diagram extends Component {
 			tasks.push(task);
 		});
 		if (tasks.length === 0) {
-			// hack for a bug (empty array)
-			tasks[0] = {};
+			return (
+				<div style={{ width: '100%', textAlign: 'center', fontWeight: 'bold' }}>
+					No data available { this.props.filter ? ' for ' + this.props.filter.displayName : '' }
+				</div>
+			);
 		}
 		return (
 			<div style={{ width: '100%', overflow: 'auto' }}>
