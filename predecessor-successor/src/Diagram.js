@@ -3,6 +3,10 @@ import ReactGantt from 'gantt-for-react';
 
 class Diagram extends Component {
 	
+	/*
+		TODO bugfix: tasks === empty array -> TypeError: Cannot read property 'clone' of null
+	*/
+	
 	constructor(props) {
 		super(props);
 		this._handleClick = this._handleClick.bind(this);
@@ -35,58 +39,75 @@ class Diagram extends Component {
 		// TODO implement later
     	return '';
     }
-
-    getTasks() {
-		// TODO remove
-    	let names = [
-    		["Redesign website", [0, 7]],
-    		["Write new content", [1, 4]],
-    		["Apply new styles", [3, 6]],
-    		["Review", [7, 7]],
-    		["Deploy", [8, 9]],
-    		["Go Live!", [10, 10]]
-    	];
-    	let tasks = names.map(function (name, i) {
-			let today = new Date();
-			let start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-			let end = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-			start.setDate(today.getDate() + name[1][0]);
-			end.setDate(today.getDate() + name[1][1]);
-			return {
-				start: start,
-				end: end,
-				name: name[0],
-				id: "Task " + i,
-				progress: parseInt(Math.random() * 100, 10)
-			}
-		});
-    	tasks[1].dependencies = "Task 0"
-		tasks[2].dependencies = "Task 1, Task 0"
-		tasks[3].dependencies = "Task 2"
-		tasks[5].dependencies = "Task 4"
-		return tasks;
-    }
 	
 	render() {
-		console.log(this.props.filter);
-		console.log(this.props.factsheets);
-		// TODO vera:
-		// hier bitte die Tasks erstellen und den 'this.props.filter' beachten (ist ebenfalls ein factsheet, eine business capability, oder 'null')
-		// https://github.com/hustcc/gantt-for-react
-		// https://github.com/frappe/gantt
-		// noch ein paar Hinweise:
-		// - applicationen (services), die keine business capability aufweisen, herausfiltern
-		// - für task.name = service.displayName
-		// - für task.start = lifecycle phase 'active' verwenden
-		// - für task.end = lifecycle phase 'end of life' verwenden
-		// - lifecycle phasen logiken kannst du dir an /psr/vtables/src/js/ReportUtils.js ansehen (siehe auch ReportApplicationPortfolio.js & ReportApplicationLifecycle.js für Verwendung)
-		// - für task.id = factsheet.ID
-		// - für progress = 100
-		// - evtl. ist es möglich das factsheet an das task object zu binden
+		let tasks = [];
+		const services = this.props.factsheets.getSortedList('services');
+		services.forEach((item) => {
+			const appBCs = item.serviceHasBusinessCapabilities;
+			if (!appBCs) {
+				return;
+			}
+			const predecessors = item.factSheetHasPredecessors;
+			if (!predecessors) {
+				return;
+			}
+			let dependencies = '';
+			predecessors.forEach((item2) => {
+				dependencies += item2.factSheetID + ',';
+			});
+			dependencies = dependencies.substring(0, dependencies.length - 1);
+			if (this.props.filter) {
+				let include = false;
+				appBCs.forEach((item2) => {
+					if (checkAssociationWithBC(this.props.factsheets, item2, this.props.filter.ID)) {
+						include = true;
+					}
+				});
+				if (!include) {
+					return;
+				}
+			}
+			// TODO regeln ueberpruefen (vor allem die fallbacks)
+			const lifecycles = getLifecycles(item);
+			let start = lifecycles[3];
+			if (!start) {
+				start = lifecycles[2];
+			}
+			if (!start) {
+				start = lifecycles[1];
+			}
+			if (!start) {
+				start = lifecycles[4];
+			}
+			let end = lifecycles[5];
+			if (!end) {
+				end = { start: new Date() };
+			}
+			if (!start || !end) {
+				return;
+			}
+			start = start.start;
+			end = end.start;
+			const task = {
+				id: item.ID,
+				name: item.displayName,
+				start: start,
+				end: end,
+				progress: 100,
+				dependencies: dependencies,
+				factsheet: item
+			};
+			tasks.push(task);
+		});
+		if (tasks.length === 0) {
+			// hack for a bug (empty array)
+			tasks[0] = {};
+		}
 		return (
 			<div style={{ width: '100%', overflow: 'auto' }}>
 				<ReactGantt
-					tasks={this.getTasks()}
+					tasks={tasks}
 					viewMode='Month'
 					onClick={this._handleClick} 
 					onDateChange={this._handleDateChange}
@@ -107,3 +128,61 @@ Diagram.propTypes = {
 };
 
 export default Diagram;
+
+const lifecycles = {
+    1: "Plan",
+    2: "Phase In",
+    3: "Active",
+    4: "Phase Out",
+    5: "End of Life"
+}
+
+function getLifecycle(item, stateID) {
+	for (var i = 0; i < item.factSheetHasLifecycles.length; i++) {
+		if (item.factSheetHasLifecycles[i].lifecycleStateID === stateID) {
+			return {
+				phase: lifecycles[item.factSheetHasLifecycles[i].lifecycleStateID],
+				phaseID: item.factSheetHasLifecycles[i].lifecycleStateID,
+				start: new Date(item.factSheetHasLifecycles[i].startDate)
+			};
+		}
+	}
+}
+
+function getLifecycles(item) {
+	const result = {};
+	for (let key in lifecycles) {
+		if (lifecycles.hasOwnProperty(key)) {
+			const lifecycle = getLifecycle(item, key);
+			if (lifecycle) {
+				result[lifecycle.phaseID] = lifecycle;
+			}
+		}
+	}
+	return result;
+}
+
+function checkAssociationWithBC(factsheets, itemRef, id, idKey) {
+	if (!idKey) {
+		idKey = 'businessCapabilityID';
+	}
+	if (isIdEqualTo(itemRef, idKey, id)) {
+		return true;
+	}
+	const bc = factsheets.byID[itemRef[idKey]];
+	if (bc.factSheetHasParents) {
+		for (let i = 0; i < bc.factSheetHasParents.length; i++) {
+			if (checkAssociationWithBC(factsheets, bc.factSheetHasParents[i], id, 'factSheetRefID')) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+function isIdEqualTo(item, idKey, id) {
+	if (item[idKey] === id) {
+		return true;
+	}
+	return false;
+}

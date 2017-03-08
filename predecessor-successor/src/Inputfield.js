@@ -86,7 +86,7 @@ class Inputfield extends Component {
 						placeholder: this.props.placeholder,
 						className: 'form-control dropdown-toggle',
 						'aria-haspopup': 'true',
-						size: 40
+						size: 60
 					}}
 					items={this.props.items}
 					value={this.state.value}
