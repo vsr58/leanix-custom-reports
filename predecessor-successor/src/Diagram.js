@@ -85,6 +85,10 @@ class Diagram extends Component {
 			}
 			start = start.start;
 			end = end.start;
+			if (start.getTime() > end.getTime()) {
+				// application is planned for a date in future, don't show
+				return;
+			}
 			const task = {
 				id: item.ID,
 				name: item.displayName,
